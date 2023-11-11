@@ -1,12 +1,15 @@
-FROM golang:latest as builder
-ARG CGO_ENABLED=0
+# syntax=docker/dockerfile:1
 
-COPY ./ /root/src/
-WORKDIR /root/src/
-RUN go build -ldflags "-s -w -X main.version=$(git describe --tags --long --always)" -trimpath -o mosdns
+FROM golang:1.21 as build
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -v -o /mosdns
 
-FROM alpine:latest
+FROM alpine as main
 
-COPY --from=builder /root/src/mosdns /usr/bin/
-
+COPY --from=build /mosdns /
+RUN mkdir -p /config
 RUN apk add --no-cache ca-certificates
+CMD ["/mosdns", "-d", "/config", "start", "-c", "config.yaml"]
