@@ -10,7 +10,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang/snappy v0.0.4
-	github.com/google/nftables v0.1.0
+	github.com/google/nftables v0.2.0
 	github.com/kardianos/service v1.2.2
 	github.com/miekg/dns v1.1.58
 	github.com/mitchellh/mapstructure v1.5.0
