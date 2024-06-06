@@ -16,7 +16,7 @@ require (
 	github.com/nadoo/ipset v0.5.0
 	github.com/pires/go-proxyproto v0.7.0
 	github.com/prometheus/client_golang v1.19.1
-	github.com/quic-go/quic-go v0.44.0
+	github.com/quic-go/quic-go v0.45.0
 	github.com/sieveLau/dnsproxy v0.57.4-0.20240510145438-7853cb55af18
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.19.0
