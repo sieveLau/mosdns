@@ -102,12 +102,12 @@ func newForwarder(bp *coremain.BP, args *Args) (*forwardPlugin, error) {
 		if num_of_bootstrap > 0 {
 			if num_of_IPAddr > 0 {
 				mlog.S().Warn("already configured server ip, no bootstrap server will be use.")
+				opt.Bootstrap = upstream.StaticResolver(serverIPAddrs)
 			} else {
 				if num_of_bootstrap > 1 {
 					mlog.S().Warn("more than 1 bootstrap server ip set, will use the first one.")
 				}
 				opt.Bootstrap, _ = upstream.NewUpstreamResolver(args.Bootstrap[0], opt)
-				opt.Bootstrap = upstream.StaticResolver(serverIPAddrs)
 			}
 		}
 
