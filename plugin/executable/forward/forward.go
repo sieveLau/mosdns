@@ -25,12 +25,14 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/netip"
 	"os"
 	"time"
 
-	"github.com/sieveLau/dnsproxy/upstream"
+	"github.com/AdguardTeam/dnsproxy/upstream"
 	"github.com/miekg/dns"
 	"github.com/sieveLau/mosdns/v4-maintenance/coremain"
+	"github.com/sieveLau/mosdns/v4-maintenance/mlog"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/executable_seq"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/query_context"
 )
@@ -84,18 +86,30 @@ func newForwarder(bp *coremain.BP, args *Args) (*forwardPlugin, error) {
 			return nil, fmt.Errorf("upstream #%d, missing upstream address", i)
 		}
 
-		serverIPAddrs := make([]net.IP, 0, len(conf.IPAddr))
+		num_of_IPAddr := len(conf.IPAddr)
+		serverIPAddrs := make([]netip.Addr, 0, num_of_IPAddr)
 		for _, s := range conf.IPAddr {
 			ip := net.ParseIP(s)
 			if ip == nil {
 				return nil, fmt.Errorf("invalid ip addr %s", s)
 			}
-			serverIPAddrs = append(serverIPAddrs, ip)
+			to_netip, _ := netip.AddrFromSlice(ip)
+			serverIPAddrs = append(serverIPAddrs, to_netip)
 		}
 
 		opt := &upstream.Options{}
-		opt.Bootstrap = args.Bootstrap
-		opt.ServerIPAddrs = serverIPAddrs
+		num_of_bootstrap := len(args.Bootstrap)
+		if num_of_bootstrap > 0 {
+			if num_of_IPAddr > 0 {
+				mlog.S().Warn("already configured server ip, no bootstrap server will be use.")
+			} else {
+				if num_of_bootstrap > 1 {
+					mlog.S().Warn("more than 1 bootstrap server ip set, will use the first one.")
+				}
+				opt.Bootstrap, _ = upstream.NewUpstreamResolver(args.Bootstrap[0], opt)
+				opt.Bootstrap = upstream.StaticResolver(serverIPAddrs)
+			}
+		}
 
 		opt.Timeout = time.Second * 10
 		if args.Timeout > 0 {
@@ -114,12 +128,12 @@ func newForwarder(bp *coremain.BP, args *Args) (*forwardPlugin, error) {
 		if args.TrustCA != "" {
 			cert, err := os.ReadFile(args.TrustCA)
 			if err != nil {
-				return nil, fmt.Errorf("Failed to read custom CA file: %q", args.TrustCA)
+				return nil, fmt.Errorf("failed to read custom CA file: %q", args.TrustCA)
 			}
 
 			// Append our cert to the system pool
 			if ok := rootCAs.AppendCertsFromPEM(cert); !ok {
-				return nil, fmt.Errorf("Failed to append %s to RootCAs", args.TrustCA)
+				return nil, fmt.Errorf("failed to append %s to RootCAs", args.TrustCA)
 			}
 		}
 

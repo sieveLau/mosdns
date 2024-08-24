@@ -22,15 +22,16 @@ package server
 import (
 	"crypto/rand"
 	"crypto/tls"
-	"github.com/sieveLau/dnsproxy/upstream"
-	"github.com/sieveLau/mosdns/v4-maintenance/pkg/server/dns_handler"
-	"github.com/sieveLau/mosdns/v4-maintenance/pkg/server/http_handler"
-	"github.com/sieveLau/mosdns/v4-maintenance/pkg/utils"
-	"github.com/miekg/dns"
 	"net"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/AdguardTeam/dnsproxy/upstream"
+	"github.com/miekg/dns"
+	"github.com/sieveLau/mosdns/v4-maintenance/pkg/server/dns_handler"
+	"github.com/sieveLau/mosdns/v4-maintenance/pkg/server/http_handler"
+	"github.com/sieveLau/mosdns/v4-maintenance/pkg/utils"
 )
 
 func getListener(tb testing.TB) net.Listener {
