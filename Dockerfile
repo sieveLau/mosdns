@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.21 as build
+FROM golang:1.22 as build
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -v -o /mosdns
+RUN CGO_ENABLED=0 GOOS=linux go build -o /mosdns
 
 FROM alpine as main
 
