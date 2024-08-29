@@ -43,7 +43,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/google/pprof v0.0.0-20240727154555-813a5fbdbec8 // indirect
+	github.com/google/pprof v0.0.0-20240827171923-fa2c70bbbfe5 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/native v1.1.0 // indirect
@@ -52,11 +52,11 @@ require (
 	github.com/mdlayher/netlink v1.7.2 // indirect
 	github.com/mdlayher/socket v0.5.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/onsi/ginkgo/v2 v2.20.1 // indirect
+	github.com/onsi/ginkgo/v2 v2.20.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.55.0 // indirect
+	github.com/prometheus/common v0.57.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/sagikazarmark/locafero v0.6.0 // indirect
