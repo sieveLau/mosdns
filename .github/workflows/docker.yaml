@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
 
       - name: Test
         run: go test -race -v ./...
@@ -51,5 +51,3 @@ jobs:
           tags: |
             sievelau/mosdns:latest
             sievelau/mosdns:4
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
