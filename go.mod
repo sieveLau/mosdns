@@ -3,7 +3,7 @@ module github.com/sieveLau/mosdns/v4-maintenance
 go 1.22.6
 
 require (
-	github.com/AdguardTeam/dnsproxy v0.73.1
+	github.com/AdguardTeam/dnsproxy v0.73.2
 	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-redis/redis/v8 v8.11.5
