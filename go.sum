@@ -1,5 +1,5 @@
-github.com/AdguardTeam/dnsproxy v0.73.1 h1:4eMiaDm1NnowKltdx/LXLJ5FTTClBECPnLxtvJy3Q0Q=
-github.com/AdguardTeam/dnsproxy v0.73.1/go.mod h1:ZcvmyQY2EiX5B0yCTkiYTgtm+1lBWA0lajbEI9dOhW4=
+github.com/AdguardTeam/dnsproxy v0.73.2 h1:O6wRXzHsnWL5TkhYcuLWCShVFF0X5RFI6qUmq1ZFVsQ=
+github.com/AdguardTeam/dnsproxy v0.73.2/go.mod h1:zD5WfTctbRvYYk8PS39h6/OT84NTu6QxKbAiBN5PUcI=
 github.com/AdguardTeam/golibs v0.27.0 h1:YxCFK6HBGp/ZXp3bv5uei+oLH12UfIYB8u2rh1B6nnU=
 github.com/AdguardTeam/golibs v0.27.0/go.mod h1:iWdjXPCwmK2g2FKIb/OwEPnovSXeMqRhI8FWLxF5oxE=
 github.com/IrineSistiana/ipset v0.5.1-0.20220703061533-6e0fc3b04c0a h1:GQdh/h0q0ni3L//CXusyk+7QdhBL289vdNaes1WKkHI=
@@ -84,8 +84,8 @@ github.com/pires/go-proxyproto v0.7.0 h1:IukmRewDQFWC7kfnb66CSomk2q/seBuilHBYFwy
 github.com/pires/go-proxyproto v0.7.0/go.mod h1:Vz/1JPY/OACxWGQNIRY2BeyDmpoaWmEP40O9LbuiFR4=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/prometheus/client_golang v1.20.3 h1:oPksm4K8B+Vt35tUhw6GbSNSgVlVSBH0qELP/7u83l4=
-github.com/prometheus/client_golang v1.20.3/go.mod h1:PIEt8X02hGcP8JWbeHyeZ53Y/jReSnHgO035n//V5WE=
+github.com/prometheus/client_golang v1.20.4 h1:Tgh3Yr67PaOv/uTqloMsCEdeuFTatm5zIq5+qNN23vI=
+github.com/prometheus/client_golang v1.20.4/go.mod h1:PIEt8X02hGcP8JWbeHyeZ53Y/jReSnHgO035n//V5WE=
 github.com/prometheus/client_model v0.6.1 h1:ZKSh/rekM+n3CeS952MLRAdFwIKqeY8b62p8ais2e9E=
 github.com/prometheus/client_model v0.6.1/go.mod h1:OrxVMOVHjw3lKMa8+x6HeMGkHMQyHDk9E3jmP2AmGiY=
 github.com/prometheus/common v0.59.1 h1:LXb1quJHWm1P6wq/U824uxYi4Sg0oGvNeUm1z5dJoX0=
