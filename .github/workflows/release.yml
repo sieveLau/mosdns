@@ -22,7 +22,7 @@ jobs:
           echo "RELEASE_NAME=Release" >> $GITHUB_ENV
           echo "TAG_NAME=$(date +%Y%m%d%H%M)" >> $GITHUB_ENV
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v1
         with:
           name: ${{ env.RELEASE_NAME }}
           tag_name: ${{ env.TAG_NAME }}
@@ -47,6 +47,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
-          goversion: "https://go.dev/dl/go1.22.6.linux-amd64.tar.gz"
+          goversion: "https://go.dev/dl/go1.21.7.linux-amd64.tar.gz"
           binary_name: "mosdns"
           release_name: "Release"
