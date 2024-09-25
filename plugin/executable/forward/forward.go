@@ -24,7 +24,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"net"
 	"net/netip"
 	"os"
 	"time"
@@ -88,13 +87,12 @@ func newForwarder(bp *coremain.BP, args *Args) (*forwardPlugin, error) {
 
 		num_of_IPAddr := len(conf.IPAddr)
 		serverIPAddrs := make([]netip.Addr, 0, num_of_IPAddr)
-		for _, s := range conf.IPAddr {
-			ip := net.ParseIP(s)
-			if ip == nil {
+		for j, s := range conf.IPAddr {
+			this_addr, err := netip.ParseAddr(s)
+			if err != nil {
 				return nil, fmt.Errorf("invalid ip addr %s", s)
 			}
-			to_netip, _ := netip.AddrFromSlice(ip)
-			serverIPAddrs = append(serverIPAddrs, to_netip)
+			serverIPAddrs[j] = this_addr
 		}
 
 		opt := &upstream.Options{}
