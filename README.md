@@ -8,6 +8,43 @@
 
 docker 镜像: [dockerhub: sievelau/mosdns](https://hub.docker.com/r/sievelau/mosdns)
 
+# 改动/Changes
+
+### trust_ca
+
+现在对upstream新增了一个配置项`trust_ca`，可以指定一个CA文件的路径，该CA所颁发的证书在**该插件**的范围内会被信任；系统已经信任的证书也会被信任。例如：
+
+Now the upstream plugin has a new option `trust_ca`, in which you can set the path to a CA cert which will be trusted in addition to those trusted by the OS. For example:
+
+```yaml
+plugins:
+  - tag: ""
+    type: "forward"
+    args:
+      upstream:
+        - addr: "quic://192.168.1.1"
+      trust_ca: "/etc/mosdns/rootCA.crt"
+```
+
+那么用`rootCA.crt`所签发的证书将会被信任。
+
+Certificates issued by `rootCA.crt` will be trusted.
+
+### freebind
+
+`servers` 中的 `listeners` 新增了一个配置选项 `freebind`。如果设置为 `true`，你可以在 `addr` 中填写任意 IP 地址。这在 mosdns 部署于路由器上且某个网络接口（特别是 LAN 口）会在 mosdns 启动后才会拥有IP的情况下非常有用。
+
+`listeners` in `servers` has a new config option `freebind`. If set to `true`, you can put whatever IP in `addr`. This is helpful when mosdns is deployed on a router and one of its network interface will go online after mosdns starts. Example:
+
+```yaml
+servers:
+  - exec: "test"
+    listeners:     
+      - protocol: udp
+        addr: "192.168.240.100:1053"
+        freebind: true
+```
+
 ## 配置文件结构/Configuration File Structure
 
 ```yaml
@@ -58,26 +95,6 @@ servers:
   api:
     http: "127.0.0.1:8080" # 在该地址启动 api 接口。
 ```
-
-# 改动/Changes
-
-现在对upstream新增了一个配置项`trust_ca`，可以指定一个CA文件的路径，该CA所颁发的证书在**该插件**的范围内会被信任；系统已经信任的证书也会被信任。例如：
-
-Now the upstream plugin has a new option `trust_ca`, in which you can set the path to a CA cert which will be trusted in addition to those trusted by the OS. For example:
-
-```yaml
-plugins:
-  - tag: ""
-    type: "forward"
-    args:
-      upstream:
-        - addr: "quic://192.168.1.1"
-      trust_ca: "/etc/mosdns/rootCA.crt"
-```
-
-那么用`rootCA.crt`所签发的证书将会被信任。
-
-Certificates issued by `rootCA.crt` will be trusted.
 
 ## Compile from source
 
