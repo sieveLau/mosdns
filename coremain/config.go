@@ -75,7 +75,7 @@ type ServerListenerConfig struct {
 	URLPath             string `yaml:"url_path"`                // used by doh, http. If it's empty, any path will be handled.
 	GetUserIPFromHeader string `yaml:"get_user_ip_from_header"` // used by doh, http.
 	ProxyProtocol       bool   `yaml:"proxy_protocol"`          // accepting the PROXYProtocol
-
+	IP_FREEBIND			bool   `yaml:"freebind"`
 	IdleTimeout uint `yaml:"idle_timeout"` // (sec) used by tcp, dot, doh as connection idle timeout.
 }
 
