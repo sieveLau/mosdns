@@ -7,44 +7,28 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strings"
 	"syscall"
 )
 
 // ListenTCPWithFreebind creates a TCP listener with the IP_FREEBIND option set.
 func ListenTCPWithFreebind(address string, freebind bool) (net.Listener, error) {
-	var afinet int
-	var addr syscall.Sockaddr
-
-	// Determine if the address is IPv4 or IPv6
-	ip := net.ParseIP(strings.Split(address, ":")[0])
-	if ip == nil {
-		return nil, fmt.Errorf("invalid IP address: %s", address)
+	// Resolve the address, automatically handles both IPv4 and IPv6
+	tcpAddr, err := net.ResolveTCPAddr("tcp", address)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve address: %v", err)
 	}
 
-	// Select IPv4 or IPv6 socket type based on parsed IP
-	if ip.To4() != nil {
+	var afinet int
+	var addr syscall.Sockaddr
+	if tcpAddr.IP.To4() != nil {
 		afinet = syscall.AF_INET
-
-		// Resolve the address to sockaddr for IPv4
-		tcpAddr, err := net.ResolveTCPAddr("tcp4", address)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve address: %v", err)
-		}
 
 		// Construct the IPv4 sockaddr
 		sa := &syscall.SockaddrInet4{Port: tcpAddr.Port}
 		copy(sa.Addr[:], tcpAddr.IP.To4())
 		addr = sa
-
 	} else {
 		afinet = syscall.AF_INET6
-
-		// Resolve the address to sockaddr for IPv6
-		tcpAddr, err := net.ResolveTCPAddr("tcp6", address)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve address: %v", err)
-		}
 
 		// Construct the IPv6 sockaddr
 		sa := &syscall.SockaddrInet6{Port: tcpAddr.Port}
@@ -52,7 +36,7 @@ func ListenTCPWithFreebind(address string, freebind bool) (net.Listener, error) 
 		addr = sa
 	}
 
-	// Create TCP socket
+	// Create the TCP socket
 	fd, err := syscall.Socket(afinet, syscall.SOCK_STREAM, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create socket: %v", err)
@@ -91,38 +75,24 @@ func ListenTCPWithFreebind(address string, freebind bool) (net.Listener, error) 
 
 // ListenUDPWithFreebind creates a UDP packet connection with the IP_FREEBIND option set.
 func ListenUDPWithFreebind(address string, freebind bool) (net.PacketConn, error) {
-	var afinet int
-	var addr syscall.Sockaddr
-
-	// Determine if the address is IPv4 or IPv6
-	ip := net.ParseIP(strings.Split(address, ":")[0])
-	if ip == nil {
-		return nil, fmt.Errorf("invalid IP address: %s", address)
+	// Resolve the address, automatically handles both IPv4 and IPv6
+	udpAddr, err := net.ResolveUDPAddr("udp", address)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve address: %v", err)
 	}
 
-	// Select IPv4 or IPv6 socket type based on parsed IP
-	if ip.To4() != nil {
+	// Determine if the address is IPv4 or IPv6
+	var afinet int
+	var addr syscall.Sockaddr
+	if udpAddr.IP.To4() != nil {
 		afinet = syscall.AF_INET
-
-		// Resolve the address to sockaddr for IPv4
-		udpAddr, err := net.ResolveUDPAddr("udp4", address)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve address: %v", err)
-		}
 
 		// Construct the IPv4 sockaddr
 		sa := &syscall.SockaddrInet4{Port: udpAddr.Port}
 		copy(sa.Addr[:], udpAddr.IP.To4())
 		addr = sa
-
 	} else {
 		afinet = syscall.AF_INET6
-
-		// Resolve the address to sockaddr for IPv6
-		udpAddr, err := net.ResolveUDPAddr("udp6", address)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve address: %v", err)
-		}
 
 		// Construct the IPv6 sockaddr
 		sa := &syscall.SockaddrInet6{Port: udpAddr.Port}
@@ -130,11 +100,12 @@ func ListenUDPWithFreebind(address string, freebind bool) (net.PacketConn, error
 		addr = sa
 	}
 
-	// Create UDP socket
+	// Create the UDP socket
 	fd, err := syscall.Socket(afinet, syscall.SOCK_DGRAM, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create socket: %v", err)
 	}
+
 
 	// Set the IP_FREEBIND option
 	if freebind {
