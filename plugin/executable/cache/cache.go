@@ -333,7 +333,7 @@ func (c *cachePlugin) doLazyUpdate(msgKey string, qCtx *query_context.Context, n
 
 // tryStoreMsg tries to store r to cache. If r should be cached.
 func (c *cachePlugin) tryStoreMsg(key string, r *dns.Msg) error {
-	if r.Rcode != dns.RcodeSuccess || r.Truncated != false {
+	if !(r.Rcode == dns.RcodeSuccess || r.Rcode == dns.RcodeNameError) || (r.Truncated) {
 		return nil
 	}
 
@@ -343,16 +343,30 @@ func (c *cachePlugin) tryStoreMsg(key string, r *dns.Msg) error {
 	}
 
 	now := time.Now()
+    timeNumber := uint32(0)
 	var expirationTime time.Time
 	if c.args.LazyCacheTTL > 0 {
-		expirationTime = now.Add(time.Duration(c.args.LazyCacheTTL) * time.Second)
+		timeNumber = uint32(c.args.LazyCacheTTL)
 	} else {
-		minTTL := dnsutils.GetMinimalTTL(r)
-		if minTTL == 0 {
-			return nil
-		}
-		expirationTime = now.Add(time.Duration(minTTL) * time.Second)
+		// switch, instead of if, is for other possible negative cache in the future
+		switch r.Rcode {
+			case dns.RcodeNameError:
+				for _, rr := range r.Ns {
+					if soa, ok := rr.(*dns.SOA); ok {
+						// Return the SOA's Minimum TTL (Negative caching TTL recommendation from RFC 2308)
+						timeNumber = soa.Minttl
+					}
+					// if response contains no SOA, it should be seen as invalid, so not caching it is appropriate
+				}
+			default:
+				timeNumber = dnsutils.GetMinimalTTL(r)
+		}		
 	}
+	if timeNumber == 0 {
+		return nil
+	}
+	expirationTime = now.Add(time.Duration(timeNumber) * time.Second)
+
 	if c.args.CompressResp {
 		compressBuf := pool.GetBuf(snappy.MaxEncodedLen(len(v)))
 		v = snappy.Encode(compressBuf.Bytes(), v)
