@@ -57,7 +57,7 @@ func init() {
 }
 
 const (
-	defaultLazyUpdateTimeout = time.Second * 5
+	defaultLazyUpdateTimeout = time.Second * 30 // RFC 8767 Section 5, around 10 to 30 seconds
 	defaultEmptyAnswerTTL    = time.Second * 300
 	recommendedLazyTTL		 = 30 // RFC 8767 Section 4
 )
