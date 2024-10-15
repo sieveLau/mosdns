@@ -20,8 +20,18 @@
 package cache
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"net"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/golang/snappy"
+	"github.com/miekg/dns"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sieveLau/mosdns/v4-maintenance/coremain"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/cache"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/cache/mem_cache"
@@ -30,13 +40,8 @@ import (
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/executable_seq"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/pool"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/query_context"
-	"github.com/go-redis/redis/v8"
-	"github.com/golang/snappy"
-	"github.com/miekg/dns"
-	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
-	"time"
 )
 
 const (
@@ -52,8 +57,9 @@ func init() {
 }
 
 const (
-	defaultLazyUpdateTimeout = time.Second * 5
+	defaultLazyUpdateTimeout = time.Second * 30 // RFC 8767 Section 5, around 10 to 30 seconds
 	defaultEmptyAnswerTTL    = time.Second * 300
+	recommendedLazyTTL		 = 30 // RFC 8767 Section 4
 )
 
 var _ coremain.ExecutablePlugin = (*cachePlugin)(nil)
@@ -112,7 +118,7 @@ func newCachePlugin(bp *coremain.BP, args *Args) (*cachePlugin, error) {
 	}
 
 	if args.LazyCacheReplyTTL <= 0 {
-		args.LazyCacheReplyTTL = 5
+		args.LazyCacheReplyTTL = recommendedLazyTTL
 	}
 
 	var whenHit executable_seq.Executable
@@ -198,16 +204,51 @@ func (c *cachePlugin) Exec(ctx context.Context, qCtx *query_context.Context, nex
 
 // getMsgKey returns a string key for the query msg, or an empty
 // string if query should not be cached.
-func (c *cachePlugin) getMsgKey(q *dns.Msg) (string, error) {
-	isSimpleQuery := len(q.Question) == 1 && len(q.Answer) == 0 && len(q.Ns) == 0 && len(q.Extra) == 0
-	if isSimpleQuery || c.args.CacheEverything {
-		msgKey, err := dnsutils.GetMsgKey(q, 0)
+func (c *cachePlugin) getMsgKey(msg *dns.Msg) (string, error) {
+	appendWithPipe := func(sb *bytes.Buffer, str string) {
+		sb.WriteString("|")
+		sb.WriteString(str)
+	}
+
+	// if cache everything or more than 1 question, use the old method
+	if c.args.CacheEverything || len(msg.Question) > 1 {
+		msgKey, err := dnsutils.GetMsgKey(msg, 0)
 		if err != nil {
 			return "", fmt.Errorf("failed to unpack query msg, %w", err)
 		}
 		return msgKey, nil
 	}
-	return "", nil
+
+	// if not everything, use the new method, considering ecs
+    // Hash the question section
+    q := msg.Question[0]
+	var keyBuffer bytes.Buffer
+
+    keyBuffer.WriteString(strings.ToLower(q.Name))
+	appendWithPipe(&keyBuffer, strconv.FormatUint(uint64(q.Qtype),10))
+	appendWithPipe(&keyBuffer, strconv.FormatUint(uint64(q.Qclass),10))
+
+	// combine e.Address and e.SourceNetmask into a string
+	// Just in case the e.Address is a full IP, not masked
+	ecsString := func(e *dns.EDNS0_SUBNET) string {
+		// e.Family is 1 for IPv4, 2 for IPv6
+		// maskbits is 32 for IPv4, 128 for IPv6
+		// algebra: 24*(2-x)+128*(x-1)
+		maskbit := int(96*(e.Family)-64)
+		mask := net.CIDRMask(int(e.SourceNetmask),maskbit)
+		maskedIP := e.Address.Mask(mask)
+		// Return the formatted result as "IP/mask"
+		return fmt.Sprintf("%s/%d", maskedIP.String(), e.SourceNetmask)
+	}
+
+    // Check for EDNS options
+    if opt := msg.IsEdns0(); opt != nil {
+		//appendWithPipe(&keybuffer, strconv.FormatBool(opt.Do()))
+		if ecs := dnsutils.GetECS(opt); ecs != nil {
+			appendWithPipe(&keyBuffer, ecsString(ecs))
+		}
+    }
+	return keyBuffer.String(), nil
 }
 
 // lookupCache returns the cached response. The ttl of returned msg will be changed properly.
@@ -292,7 +333,7 @@ func (c *cachePlugin) doLazyUpdate(msgKey string, qCtx *query_context.Context, n
 
 // tryStoreMsg tries to store r to cache. If r should be cached.
 func (c *cachePlugin) tryStoreMsg(key string, r *dns.Msg) error {
-	if r.Rcode != dns.RcodeSuccess || r.Truncated != false {
+	if !(r.Rcode == dns.RcodeSuccess || r.Rcode == dns.RcodeNameError) || (r.Truncated) {
 		return nil
 	}
 
@@ -302,16 +343,30 @@ func (c *cachePlugin) tryStoreMsg(key string, r *dns.Msg) error {
 	}
 
 	now := time.Now()
+    timeNumber := uint32(0)
 	var expirationTime time.Time
 	if c.args.LazyCacheTTL > 0 {
-		expirationTime = now.Add(time.Duration(c.args.LazyCacheTTL) * time.Second)
+		timeNumber = uint32(c.args.LazyCacheTTL)
 	} else {
-		minTTL := dnsutils.GetMinimalTTL(r)
-		if minTTL == 0 {
-			return nil
-		}
-		expirationTime = now.Add(time.Duration(minTTL) * time.Second)
+		// switch, instead of if, is for other possible negative cache in the future
+		switch r.Rcode {
+			case dns.RcodeNameError:
+				for _, rr := range r.Ns {
+					if soa, ok := rr.(*dns.SOA); ok {
+						// Return the SOA's Minimum TTL (Negative caching TTL recommendation from RFC 2308)
+						timeNumber = soa.Minttl
+					}
+					// if response contains no SOA, it should be seen as invalid, so not caching it is appropriate
+				}
+			default:
+				timeNumber = dnsutils.GetMinimalTTL(r)
+		}		
 	}
+	if timeNumber == 0 {
+		return nil
+	}
+	expirationTime = now.Add(time.Duration(timeNumber) * time.Second)
+
 	if c.args.CompressResp {
 		compressBuf := pool.GetBuf(snappy.MaxEncodedLen(len(v)))
 		v = snappy.Encode(compressBuf.Bytes(), v)
