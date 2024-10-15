@@ -20,8 +20,18 @@
 package cache
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"net"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/golang/snappy"
+	"github.com/miekg/dns"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sieveLau/mosdns/v4-maintenance/coremain"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/cache"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/cache/mem_cache"
@@ -30,13 +40,8 @@ import (
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/executable_seq"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/pool"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/query_context"
-	"github.com/go-redis/redis/v8"
-	"github.com/golang/snappy"
-	"github.com/miekg/dns"
-	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
-	"time"
 )
 
 const (
@@ -54,6 +59,7 @@ func init() {
 const (
 	defaultLazyUpdateTimeout = time.Second * 5
 	defaultEmptyAnswerTTL    = time.Second * 300
+	recommendedLazyTTL		 = 30 // RFC 8767 Section 4
 )
 
 var _ coremain.ExecutablePlugin = (*cachePlugin)(nil)
@@ -112,7 +118,7 @@ func newCachePlugin(bp *coremain.BP, args *Args) (*cachePlugin, error) {
 	}
 
 	if args.LazyCacheReplyTTL <= 0 {
-		args.LazyCacheReplyTTL = 5
+		args.LazyCacheReplyTTL = recommendedLazyTTL
 	}
 
 	var whenHit executable_seq.Executable
@@ -198,16 +204,51 @@ func (c *cachePlugin) Exec(ctx context.Context, qCtx *query_context.Context, nex
 
 // getMsgKey returns a string key for the query msg, or an empty
 // string if query should not be cached.
-func (c *cachePlugin) getMsgKey(q *dns.Msg) (string, error) {
-	isSimpleQuery := len(q.Question) == 1 && len(q.Answer) == 0 && len(q.Ns) == 0 && len(q.Extra) == 0
-	if isSimpleQuery || c.args.CacheEverything {
-		msgKey, err := dnsutils.GetMsgKey(q, 0)
+func (c *cachePlugin) getMsgKey(msg *dns.Msg) (string, error) {
+	appendWithPipe := func(sb *bytes.Buffer, str string) {
+		sb.WriteString("|")
+		sb.WriteString(str)
+	}
+
+	// if cache everything or more than 1 question, use the old method
+	if c.args.CacheEverything || len(msg.Question) > 1 {
+		msgKey, err := dnsutils.GetMsgKey(msg, 0)
 		if err != nil {
 			return "", fmt.Errorf("failed to unpack query msg, %w", err)
 		}
 		return msgKey, nil
 	}
-	return "", nil
+
+	// if not everything, use the new method, considering ecs
+    // Hash the question section
+    q := msg.Question[0]
+	var keyBuffer bytes.Buffer
+
+    keyBuffer.WriteString(strings.ToLower(q.Name))
+	appendWithPipe(&keyBuffer, strconv.FormatUint(uint64(q.Qtype),10))
+	appendWithPipe(&keyBuffer, strconv.FormatUint(uint64(q.Qclass),10))
+
+	// combine e.Address and e.SourceNetmask into a string
+	// Just in case the e.Address is a full IP, not masked
+	ecsString := func(e *dns.EDNS0_SUBNET) string {
+		// e.Family is 1 for IPv4, 2 for IPv6
+		// maskbits is 32 for IPv4, 128 for IPv6
+		// algebra: 24*(2-x)+128*(x-1)
+		maskbit := int(96*(e.Family)-64)
+		mask := net.CIDRMask(int(e.SourceNetmask),maskbit)
+		maskedIP := e.Address.Mask(mask)
+		// Return the formatted result as "IP/mask"
+		return fmt.Sprintf("%s/%d", maskedIP.String(), e.SourceNetmask)
+	}
+
+    // Check for EDNS options
+    if opt := msg.IsEdns0(); opt != nil {
+		//appendWithPipe(&keybuffer, strconv.FormatBool(opt.Do()))
+		if ecs := dnsutils.GetECS(opt); ecs != nil {
+			appendWithPipe(&keyBuffer, ecsString(ecs))
+		}
+    }
+	return keyBuffer.String(), nil
 }
 
 // lookupCache returns the cached response. The ttl of returned msg will be changed properly.
