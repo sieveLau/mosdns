@@ -45,6 +45,37 @@ servers:
         freebind: true
 ```
 
+### check and no_private
+
+`ecs` 插件新增了配置选项 `check` 和 `no_private`，用于检查 edns-client-subnet 是否包含私有地址或不合法地址。`no_private` 有五个合法值：
+- `false` 和 `no` 以及 不指定：不作修改（除非 `check` 设置为 `true`）
+- `true` 和 `yes`：在 `force_overwrite` 也是 `true` 的时候移除私有地址
+- `strict`：无论 `force_overwrite` 是否为 `true`，都会移除私有地址或不合法地址
+
+`check` 如果为 `true`，则 `no_private` 会被设置为 `strict`，且如果 ECS 地址非法会无视 `force_overwrite` 的值删除 ECS（但是不会新增 ECS）。
+
+此外还有其他修改，使得 ecs 插件几乎完全符合 RFC 7871 的要求，例如 `_no_ecs` 只会对发往上游的请求删除 ECS，在回复客户端时会重新加上 ECS；同时启用 `auto` 和 `overwrite` 或者由于 ECS 不合法被内部删除时，会把上游回复的 ECS 替换成客户端请求时的 ECS 并修改对应的参数（特指 scope prefix）。
+
+The `ecs` plugin introduces two new configuration options, `check` and `no_private`, used to verify whether the `edns-client-subnet` contains private or invalid addresses. The `no_private` option has five valid values:
+
+- `false`, `no`, or unspecified: No modification will be made (unless `check` is set to `true`).
+- `true` and `yes`: Private addresses will be removed if `force_overwrite` is also `true`.
+- `strict`: Private or invalid addresses will be removed regardless of whether `force_overwrite` is set to `true`.
+
+If `check` is set to `true`, the `no_private` option will be enforced as `strict`. Moreover, if the ECS address is invalid, the ECS will be removed, ignoring the `force_overwrite` value (but no new ECS will be added in this case).
+
+There are additional changes making the `ecs` plugin almost fully compliant with RFC 7871. For instance, `_no_ecs` will only remove ECS from requests sent to upstream servers, but it will add ECS back in responses to clients. When ECS is changed by the plugin, or when ECS is internally removed due to being invalid, the ECS from the upstream response will be replaced with the ECS from the client request, and the relevant parameters (specifically the scope prefix) will be updated accordingly. And many more senarios I won't enum here.
+
+
+```yaml
+plugins:
+  - tag: "ecs"
+    type: "ecs"
+    args:
+      check: true
+      no_private: strict # 可以同时启用这两个选项，但是 check: true 会覆盖 no_private
+```
+
 ## 配置文件结构/Configuration File Structure
 
 ```yaml

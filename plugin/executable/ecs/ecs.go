@@ -22,18 +22,40 @@ package ecs
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/netip"
+
+	"github.com/miekg/dns"
 	"github.com/sieveLau/mosdns/v4-maintenance/coremain"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/dnsutils"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/executable_seq"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/query_context"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/utils"
-	"github.com/miekg/dns"
-	"net/netip"
 )
 
 const PluginType = "ecs"
 
+// TODO: dynamic smart blacklist, if refused, add to list: domain-subnet
+
+var privateIPBlocks []*net.IPNet
+
 func init() {
+	for _, cidr := range []string{
+		"127.0.0.0/8",    // IPv4 loopback
+		"10.0.0.0/8",     // RFC1918
+		"172.16.0.0/12",  // RFC1918
+		"192.168.0.0/16", // RFC1918
+		"169.254.0.0/16", // RFC3927 link-local
+		"::1/128",        // IPv6 loopback
+		"fe80::/10",      // IPv6 link-local
+		"fc00::/7",       // IPv6 unique local addr
+	} {
+		_, block, err := net.ParseCIDR(cidr)
+		if err != nil {
+			panic(fmt.Errorf("parse error on %q: %v", cidr, err))
+		}
+		privateIPBlocks = append(privateIPBlocks, block)
+	}
 	coremain.RegNewPluginFunc(PluginType, Init, func() interface{} { return new(Args) })
 
 	coremain.RegNewPersetPluginFunc("_no_ecs", func(bp *coremain.BP) (coremain.Plugin, error) {
@@ -41,12 +63,35 @@ func init() {
 	})
 }
 
+func isPrivateIP(ip netip.Addr) bool {
+	if ip.Is4In6() {
+		ip = ip.Unmap()
+	}
+	if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+		return true
+	}
+
+	for _, block := range privateIPBlocks {
+		if block.Contains(net.IP(ip.AsSlice())) {
+			return true
+		}
+	}
+	return false
+}
+
 var _ coremain.ExecutablePlugin = (*ecsPlugin)(nil)
+var noprivateMode int = 0
 
 type Args struct {
 	// Automatically append client address as ecs.
 	// If this is true, pre-set addresses will not be used.
 	Auto bool `yaml:"auto"`
+
+	// Filter out private addresses in ecs
+	NoPrivate string `yaml:"no_private"`
+
+	// Check ecs, implied no_private="strict"
+	Check bool `yaml:"check"`
 
 	// force overwrite existing ecs
 	ForceOverwrite bool `yaml:"force_overwrite"`
@@ -66,6 +111,19 @@ func (a *Args) Init() error {
 	}
 	if ok := utils.CheckNumRange(a.Mask6, 0, 128); !ok {
 		return fmt.Errorf("invalid mask6 %d, should between 0~128", a.Mask6)
+	}
+	switch a.NoPrivate {
+	case "", "false", "no":
+		noprivateMode = 0
+	case "true", "yes":
+		noprivateMode = 1
+	case "strict":
+		noprivateMode = 2
+	default:
+		return fmt.Errorf("invalid mode %s, should be one of true/false/yes/no/strict", a.NoPrivate)
+	}
+	if a.Check {
+		noprivateMode = 2
 	}
 	utils.SetDefaultNum(&a.Mask4, 24)
 	utils.SetDefaultNum(&a.Mask6, 48)
@@ -98,6 +156,12 @@ func newPlugin(bp *coremain.BP, args *Args) (p *ecsPlugin, err error) {
 		}
 		if !addr.Is4() {
 			return nil, fmt.Errorf("%s is not a ipv4 address", args.IPv4)
+		}
+		if isPrivateIP(addr) {
+			bp.L().Warn(fmt.Sprintf("%s is a private address and should not be used as client subnet", addr.String()))
+			if noprivateMode == 0 {
+				ep.ipv4 = addr
+			}
 		} else {
 			ep.ipv4 = addr
 		}
@@ -110,6 +174,12 @@ func newPlugin(bp *coremain.BP, args *Args) (p *ecsPlugin, err error) {
 		}
 		if !addr.Is6() {
 			return nil, fmt.Errorf("%s is not a ipv6 address", args.IPv6)
+		}
+		if isPrivateIP(addr) {
+			bp.L().Warn(fmt.Sprintf("%s is a private address and should not be used as client subnet", addr.String()))
+			if noprivateMode == 0 {
+				ep.ipv6 = addr
+			}
 		} else {
 			ep.ipv6 = addr
 		}
@@ -120,42 +190,93 @@ func newPlugin(bp *coremain.BP, args *Args) (p *ecsPlugin, err error) {
 
 // Exec tries to append ECS to qCtx.Q().
 func (e *ecsPlugin) Exec(ctx context.Context, qCtx *query_context.Context, next executable_seq.ExecutableChainNode) error {
-	upgraded, newECS := e.addECS(qCtx)
+	upgraded, replacedECS, oldECS := e.addECS(qCtx)
 	err := executable_seq.ExecChainNode(ctx, qCtx, next)
 	if err != nil {
 		return err
 	}
 
-	if r := qCtx.R(); r != nil {
-		if upgraded {
-			dnsutils.RemoveEDNS0(r)
-		} else {
-			if newECS {
-				dnsutils.RemoveMsgECS(r)
-			}
+	setRScopePrefix := func(r *dns.Msg) {
+		if newECS := dnsutils.GetMsgECS(r); newECS != nil {
+			oldECS.SourceScope = newECS.SourceScope
 		}
+	}
+
+	if r := qCtx.R(); r != nil {
+		if upgraded { // if query is non EDNS0, remove the entire EDNS0 section
+			dnsutils.RemoveEDNS0(r)
+		} else if oldECS == nil { // if query has no ECS, remove only the ECS
+			dnsutils.RemoveMsgECS(r)
+		} else if replacedECS { // if query has ECS, replace the response's ECS with the query's
+			// with scope prefix set to the response's one
+			setRScopePrefix(r)
+			dnsutils.AddECS(r.IsEdns0(), oldECS, true)
+		}
+	}
+	return nil
+}
+
+func cloneECS(q *dns.Msg) *dns.EDNS0_SUBNET {
+	if ecs := dnsutils.GetMsgECS(q); ecs != nil {
+		newECS := *ecs
+		return &newECS
 	}
 	return nil
 }
 
 // addECS adds a *dns.EDNS0_SUBNET record to q.
 // upgraded: Whether the addECS upgraded the q to a EDNS0 enabled query.
-// newECS: Whether the addECS added a *dns.EDNS0_SUBNET to q that didn't
+// overwrited: Whether the addECS added a *dns.EDNS0_SUBNET to q that didn't
 // have a *dns.EDNS0_SUBNET before.
-func (e *ecsPlugin) addECS(qCtx *query_context.Context) (upgraded bool, newECS bool) {
+// oldECS: A CLONE of the original *dns.EDNS0_SUBNET, nil if none
+// RFC 7871, if the client queries with ecs, we must response with one
+func (e *ecsPlugin) addECS(qCtx *query_context.Context) (upgraded bool, overwrited bool, originECS *dns.EDNS0_SUBNET) {
 	q := qCtx.Q()
 	opt := q.IsEdns0()
 	hasECS := opt != nil && dnsutils.GetECS(opt) != nil
-	if hasECS && !e.args.ForceOverwrite {
-		// Argument args.ForceOverwrite is disabled. q already has an edns0 subnet. Skip it.
-		return false, false
-	}
+	var oldECS *dns.EDNS0_SUBNET = nil
+	if hasECS {
+		oldECS = cloneECS(q)
+		// do this before overwrite, in case strict mode enabled
+		qECS := dnsutils.GetECS(opt)
+		addr, ok := netip.AddrFromSlice(qECS.Address)
+		if !ok { // ecs is not valid address
+			e.L().Warn(fmt.Sprintf("Invalid query ECS address %s", qECS.Address.String()))
+			if e.args.Check { // check on, even without overwrite, will remove
+				dnsutils.RemoveMsgECS(q)
+				overwrited = true
+			}
+			// Argument args.ForceOverwrite is disabled. q already has an edns0 subnet. Skip it.
+			// RFC 7871, source prefix 0 should not be replaced
+			if !e.args.ForceOverwrite || oldECS.SourceNetmask == 0 {
+				return false, overwrited, oldECS
+			}
+		} else if isPrivateIP(addr) { // ecs address is valid
+			if noprivateMode == 2 {
+				e.L().Warn(fmt.Sprintf("private address %s in query ECS with strict no private mode, removing", addr.String()))
+				dnsutils.RemoveMsgECS(q)
+				overwrited = true
+			}
+			if !e.args.ForceOverwrite || oldECS.SourceNetmask == 0 {
+				return false, overwrited, oldECS
+			}
+			if noprivateMode > 0 && !overwrited {
+				dnsutils.RemoveMsgECS(q)
+				overwrited = true
+			}
+		} else {
+			if !e.args.ForceOverwrite || oldECS.SourceNetmask == 0 {
+				return false, overwrited, oldECS
+			}
+		}
+	} // if the query has no ECS, oldECS is nil
 
 	var ecs *dns.EDNS0_SUBNET
 	if e.args.Auto { // use client ip
 		clientAddr := qCtx.ReqMeta().ClientAddr
-		if !clientAddr.IsValid() {
-			return false, false
+		if !clientAddr.IsValid() || (isPrivateIP(clientAddr) && noprivateMode > 0) {
+			// Not replacing ECS, return nil
+			return false, overwrited, oldECS
 		}
 
 		switch {
@@ -189,10 +310,10 @@ func (e *ecsPlugin) addECS(qCtx *query_context.Context) (upgraded bool, newECS b
 			upgraded = true
 			opt = dnsutils.UpgradeEDNS0(q)
 		}
-		newECS = dnsutils.AddECS(opt, ecs, true)
-		return upgraded, newECS
+		overwrited = dnsutils.AddECS(opt, ecs, true) || overwrited // in case the strict mode is on and replaced ecs
+		return upgraded, overwrited, oldECS
 	}
-	return false, false
+	return false, overwrited, oldECS
 }
 
 func checkQueryType(m *dns.Msg, typ uint16) bool {
@@ -208,13 +329,43 @@ type noECS struct {
 
 var _ coremain.ExecutablePlugin = (*noECS)(nil)
 
+// Should be transparent to the client,
+// remove ecs from query to upstream, and add back to response if present
 func (n *noECS) Exec(ctx context.Context, qCtx *query_context.Context, next executable_seq.ExecutableChainNode) error {
-	dnsutils.RemoveMsgECS(qCtx.Q())
+	q := qCtx.Q()
+	// get a copy before request
+	oldECS := cloneECS(q)
+	if oldECS != nil {
+		dnsutils.RemoveMsgECS(q)
+	}
 	if err := executable_seq.ExecChainNode(ctx, qCtx, next); err != nil {
 		return err
 	}
-	if qCtx.R() != nil {
-		dnsutils.RemoveMsgECS(qCtx.R())
+	setRScopePrefix := func(r *dns.Msg) {
+		if newECS := dnsutils.GetMsgECS(r); newECS != nil {
+			oldECS.SourceScope = newECS.SourceScope
+		}
+	}
+	r := qCtx.R()
+	if r != nil {
+		if q.IsEdns0() == nil {
+			dnsutils.RemoveEDNS0(r)
+			return nil
+		}
+		if oldECS == nil { // if query have no ECS, remove it from response
+			dnsutils.RemoveMsgECS(r)
+			return nil
+		}
+		// query has ECS
+		ropt := r.IsEdns0()
+		if ropt == nil { // if response has no ECS, create the OPT section
+			ropt = new(dns.OPT)
+			dnsutils.AddECS(ropt, oldECS, true) // replace response's ECS with ours
+			r.Extra = append(r.Extra, ropt)
+		} else {
+			setRScopePrefix(r)                  // if response has ECS, set oldECS scope prefix
+			dnsutils.AddECS(ropt, oldECS, true) // replace response's ECS with ours
+		}
 	}
 	return nil
 }
