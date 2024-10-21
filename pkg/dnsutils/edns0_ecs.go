@@ -57,11 +57,13 @@ func RemoveECS(opt *dns.OPT) {
 			return
 		}
 	}
-	return
 }
 
 // AddECS adds ecs to opt.
 func AddECS(opt *dns.OPT, ecs *dns.EDNS0_SUBNET, overwrite bool) (newECS bool) {
+	if opt == nil || ecs == nil {
+		return false
+	}
 	for o := range opt.Option {
 		if opt.Option[o].Option() == dns.EDNS0SUBNET {
 			if overwrite {
