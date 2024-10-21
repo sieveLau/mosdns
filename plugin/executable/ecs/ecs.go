@@ -264,6 +264,10 @@ func (e *ecsPlugin) addECS(qCtx *query_context.Context) (upgraded bool, overwrit
 				dnsutils.RemoveMsgECS(q)
 				overwrited = true
 			}
+		} else {
+			if !e.args.ForceOverwrite || oldECS.SourceNetmask == 0 {
+				return false, overwrited, oldECS
+			}
 		}
 	} // if the query has no ECS, oldECS is nil
 
