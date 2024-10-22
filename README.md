@@ -10,7 +10,7 @@ docker 镜像: [dockerhub: sievelau/mosdns](https://hub.docker.com/r/sievelau/mo
 
 # 改动/Changes
 
-### trust_ca
+## trust_ca
 
 现在对upstream新增了一个配置项`trust_ca`，可以指定一个CA文件的路径，该CA所颁发的证书在**该插件**的范围内会被信任；系统已经信任的证书也会被信任。例如：
 
@@ -30,7 +30,7 @@ plugins:
 
 Certificates issued by `rootCA.crt` will be trusted.
 
-### freebind
+## freebind
 
 `servers` 中的 `listeners` 新增了一个配置选项 `freebind`。如果设置为 `true`，你可以在 `addr` 中填写任意 IP 地址。这在 mosdns 部署于路由器上且某个网络接口（特别是 LAN 口）会在 mosdns 启动后才会拥有IP的情况下非常有用。
 
@@ -45,7 +45,7 @@ servers:
         freebind: true
 ```
 
-### check and no_private
+## check and no_private
 
 `ecs` 插件新增了配置选项 `check` 和 `no_private`，用于检查 edns-client-subnet 是否包含私有地址或不合法地址。`no_private` 有五个合法值：
 - `false` 和 `no` 以及 不指定：不作修改（除非 `check` 设置为 `true`）
@@ -76,7 +76,13 @@ plugins:
       no_private: strict # 可以同时启用这两个选项，但是 check: true 会覆盖 no_private
 ```
 
-## 配置文件结构/Configuration File Structure
+## generic_mode
+
+`cache` plugin has a new option `generic_mode`, either `true` or `false`. If `true`, only a minimum part of the query, i.e. the question, qclass and qtyped, is used as cache key. If you don't want your cache rate dragged by the ecs, you can enable it. Note that this option has lower priority than `cache_everything`, so if the latter is true, this will have no effect.
+
+`cache` 插件有一个新选项 `generic_mode`，可以为 `true` 或 `false`。如果为 `true`，则仅查询的最小部分（即question、qclass 和 qtype）将用作缓存键。如果不希望缓存命中率受到 ecs（edns-client-subnet）的影响，可以启用该选项。需要注意的是，该选项的优先级低于 `cache_everything`，因此如果后者为 true，此选项将不起作用。
+
+# 配置文件结构/Configuration File Structure
 
 ```yaml
 # 日志设置
@@ -122,12 +128,12 @@ servers:
         addr: ":53"
       - protocol: tcp
         addr: ":53"
-  # API 入口设置     
-  api:
-    http: "127.0.0.1:8080" # 在该地址启动 api 接口。
+# API 入口设置     
+api:
+  http: "127.0.0.1:8080" # 在该地址启动 api 接口。
 ```
 
-## Compile from source
+# Compile from source
 
 Build dependencies:
 
