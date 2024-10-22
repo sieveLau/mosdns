@@ -73,6 +73,7 @@ type Args struct {
 	CacheEverything   bool   `yaml:"cache_everything"`
 	CompressResp      bool   `yaml:"compress_resp"`
 	WhenHit           string `yaml:"when_hit"`
+	GenericMode	      bool   `yaml:"generic_mode"`
 }
 
 type cachePlugin struct {
@@ -220,10 +221,11 @@ func (c *cachePlugin) getMsgKey(msg *dns.Msg) (string, error) {
 	}
 
 	// if not everything, use the new method, considering ecs
-    // Hash the question section
     q := msg.Question[0]
 	var keyBuffer bytes.Buffer
 
+	// basic component: FQDN(with dot)|qtype|qclass
+	// this is what generic_mode=true means
     keyBuffer.WriteString(strings.ToLower(q.Name))
 	appendWithPipe(&keyBuffer, strconv.FormatUint(uint64(q.Qtype),10))
 	appendWithPipe(&keyBuffer, strconv.FormatUint(uint64(q.Qclass),10))
@@ -241,12 +243,12 @@ func (c *cachePlugin) getMsgKey(msg *dns.Msg) (string, error) {
 		return fmt.Sprintf("%s/%d", maskedIP.String(), e.SourceNetmask)
 	}
 
+	// extended component: now only ECS
+	// if generic_mode=true, skip this
     // Check for EDNS options
-    if opt := msg.IsEdns0(); opt != nil {
+    if ecs := dnsutils.GetMsgECS(msg); ecs != nil && !c.args.GenericMode {
 		//appendWithPipe(&keybuffer, strconv.FormatBool(opt.Do()))
-		if ecs := dnsutils.GetECS(opt); ecs != nil {
-			appendWithPipe(&keyBuffer, ecsString(ecs))
-		}
+		appendWithPipe(&keyBuffer, ecsString(ecs))
     }
 	return keyBuffer.String(), nil
 }
