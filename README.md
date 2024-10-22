@@ -56,6 +56,8 @@ servers:
 
 此外还有其他修改，使得 ecs 插件几乎完全符合 RFC 7871 的要求，例如 `_no_ecs` 只会对发往上游的请求删除 ECS，在回复客户端时会重新加上 ECS；同时启用 `auto` 和 `overwrite` 或者由于 ECS 不合法被内部删除时，会把上游回复的 ECS 替换成客户端请求时的 ECS 并修改对应的参数（特指 scope prefix）。
 
+`ecs` 插件即使没有设置任何参数，放一个到sequence里（越前越好，至少要在forward插件之前）也会使你得到一致的ECS的好处。
+
 The `ecs` plugin introduces two new configuration options, `check` and `no_private`, used to verify whether the `edns-client-subnet` contains private or invalid addresses. The `no_private` option has five valid values:
 
 - `false`, `no`, or unspecified: No modification will be made (unless `check` is set to `true`).
@@ -66,6 +68,7 @@ If `check` is set to `true`, the `no_private` option will be enforced as `strict
 
 There are additional changes making the `ecs` plugin almost fully compliant with RFC 7871. For instance, `_no_ecs` will only remove ECS from requests sent to upstream servers, but it will add ECS back in responses to clients. When ECS is changed by the plugin, or when ECS is internally removed due to being invalid, the ECS from the upstream response will be replaced with the ECS from the client request, and the relevant parameters (specifically the scope prefix) will be updated accordingly. And many more senarios I won't enum here.
 
+The ecs plugin, even without setting any parameters, will provide you with consistent ECS benefits simply by placing it in the sequence (the earlier, the better, but at least before the forward plugin).
 
 ```yaml
 plugins:
@@ -81,6 +84,31 @@ plugins:
 `cache` plugin has a new option `generic_mode`, either `true` or `false`. If `true`, only a minimum part of the query, i.e. the question, qclass and qtyped, is used as cache key. If you don't want your cache rate dragged by the ecs, you can enable it. Note that this option has lower priority than `cache_everything`, so if the latter is true, this will have no effect.
 
 `cache` 插件有一个新选项 `generic_mode`，可以为 `true` 或 `false`。如果为 `true`，则仅查询的最小部分（即question、qclass 和 qtype）将用作缓存键。如果不希望缓存命中率受到 ecs（edns-client-subnet）的影响，可以启用该选项。需要注意的是，该选项的优先级低于 `cache_everything`，因此如果后者为 true，此选项将不起作用。
+
+## auto_retry
+
+`forward` 插件有一个新的选项 `auto_retry`，可以设置为 `true` 或 `false`。如果设置为 `true` 并且满足以下所有条件：
+
+1. 插件从上游收到 REFUSED 响应码
+2. 原始查询包含 ECS
+
+那么插件将移除 ECS 并再次尝试。请注意，插件在移除 ECS 后不会重新添加 ECS，因此建议您在 `forward` 插件之前放置一个 `ecs` 插件，即使不带参数。
+
+`forward` plugin has a new option `auto_retry`, either `true` or `false`. If `true` and all of the following conditions are true:
+1. the plugin gets a REFUSED rcode from upstream
+2. the original query contains ECS
+
+Then the plugin will remove the ECS and try again. Note that the plugin won't add back ECS if it removes ECS, so you are recommended to place a `ecs` plugin, even with no arguments, before the `forward` plugin.
+
+```yaml
+plugins:
+  - tag: "forward"
+    type: "forward"
+    args:
+      auto_retry: true
+      upstream:
+        - addr: "8.8.8.8"
+```
 
 # 配置文件结构/Configuration File Structure
 

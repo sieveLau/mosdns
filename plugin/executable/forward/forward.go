@@ -33,6 +33,7 @@ import (
 	"github.com/miekg/dns"
 	"github.com/sieveLau/mosdns/v4-maintenance/coremain"
 	"github.com/sieveLau/mosdns/v4-maintenance/mlog"
+	"github.com/sieveLau/mosdns/v4-maintenance/pkg/dnsutils"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/executable_seq"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/query_context"
 )
@@ -49,6 +50,7 @@ type forwardPlugin struct {
 	*coremain.BP
 
 	upstreams []upstream.Upstream
+	autoRetry bool
 }
 
 type Args struct {
@@ -58,6 +60,7 @@ type Args struct {
 	InsecureSkipVerify bool             `yaml:"insecure_skip_verify"`
 	Bootstrap          []string         `yaml:"bootstrap"`
 	TrustCA            string           `yaml:"trust_ca"`
+	AutoRetry	       bool             `yaml:"auto_retry"`
 }
 
 type UpstreamConfig struct {
@@ -80,6 +83,11 @@ func newForwarder(bp *coremain.BP, args *Args) (*forwardPlugin, error) {
 
 	f := new(forwardPlugin)
 	f.BP = bp
+	if args.AutoRetry {
+		f.autoRetry = true
+	} else {
+		f.autoRetry = false
+	}
 
 	for i, conf := range args.UpstreamConfig {
 		if len(conf.Addr) == 0 {
@@ -154,22 +162,39 @@ func newForwarder(bp *coremain.BP, args *Args) (*forwardPlugin, error) {
 // - handler.ContextStatusResponded: if it received a response.
 // - handler.ContextStatusServerFailed: if all upstreams failed.
 func (f *forwardPlugin) Exec(ctx context.Context, qCtx *query_context.Context, next executable_seq.ExecutableChainNode) error {
-	err := f.exec(ctx, qCtx)
-	if err != nil {
+	if err := f.exec(ctx, qCtx, nil); err != nil {
 		return err
+	}
+
+	if f.autoRetry && qCtx.R().Rcode == dns.RcodeRefused {
+		if dnsutils.GetMsgECS(qCtx.Q()) != nil {
+			q := qCtx.Q().Copy()
+			dnsutils.RemoveMsgECS(q)
+			if err := f.exec(ctx, qCtx, q); err != nil {
+				return err
+			}
+		}
 	}
 
 	return executable_seq.ExecChainNode(ctx, qCtx, next)
 }
 
-func (f *forwardPlugin) exec(ctx context.Context, qCtx *query_context.Context) error {
+
+// specialQ: if you want to use another dns.Msg instead of that in qCtx
+// for example, auto retry when refused due to invalid ecs
+func (f *forwardPlugin) exec(ctx context.Context, qCtx *query_context.Context, specialQ *dns.Msg) error {
 	type res struct {
 		r   *dns.Msg
 		err error
 	}
 	// Remainder: Always makes a copy of q. dnsproxy/upstream may keep or even modify the q in their
 	// Exchange() calls.
-	q := qCtx.Q().Copy()
+	var q *dns.Msg
+	if specialQ == nil {
+		q = qCtx.Q().Copy()
+	} else {
+		q = specialQ
+	}
 	c := make(chan res, 1)
 	go func() {
 		r, _, err := upstream.ExchangeParallel(f.upstreams, q)

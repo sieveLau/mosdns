@@ -190,7 +190,7 @@ func newPlugin(bp *coremain.BP, args *Args) (p *ecsPlugin, err error) {
 
 // Exec tries to append ECS to qCtx.Q().
 func (e *ecsPlugin) Exec(ctx context.Context, qCtx *query_context.Context, next executable_seq.ExecutableChainNode) error {
-	upgraded, replacedECS, oldECS := e.addECS(qCtx)
+	upgraded, _, oldECS := e.addECS(qCtx)
 	err := executable_seq.ExecChainNode(ctx, qCtx, next)
 	if err != nil {
 		return err
@@ -207,7 +207,7 @@ func (e *ecsPlugin) Exec(ctx context.Context, qCtx *query_context.Context, next 
 			dnsutils.RemoveEDNS0(r)
 		} else if oldECS == nil { // if query has no ECS, remove only the ECS
 			dnsutils.RemoveMsgECS(r)
-		} else if replacedECS { // if query has ECS, replace the response's ECS with the query's
+		} else { // if query has ECS, replace the response's ECS with the query's
 			// with scope prefix set to the response's one
 			setRScopePrefix(r)
 			dnsutils.AddECS(r.IsEdns0(), oldECS, true)
