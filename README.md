@@ -110,6 +110,22 @@ plugins:
         - addr: "8.8.8.8"
 ```
 
+## fastest and fastest_timeout
+
+`forward` 插件有两个新的选项 `fastest` 和 `fastest_timeout`。 `fastest_timeout` 的时间单位是毫秒。`fastest`为 `true` 时，得到上游的回应后会 ping 所有 IP 地址并只返回延迟最低的地址。该功能由上游的 AdguardTeam 的 fastip 提供。仅建议对本机或局域网的设备启用这个选项，为公网提供服务时启用这个选项会导致错误判断（客户端的网络 ping 结果与服务器的不同）。
+
+The `forward` plugin has two new options: `fastest` and `fastest_timeout`. The time unit for `fastest_timeout` is milliseconds. When `fastest` is set to `true`, it will ping all IP addresses after receiving responses from all upstream servers and will only return the address with the lowest latency. This feature is provided by AdguardTeam’s `fastip`. It is recommended to enable this option only for local or LAN devices, as enabling it for public-facing services may result in incorrect assessments (the client’s network ping results differ from the server’s).
+
+```yaml
+plugins:
+  - tag: "forward"
+    type: "forward"
+    args:
+      fastest: true
+      upstream:
+        - addr: "8.8.8.8"
+```
+
 # 配置文件结构/Configuration File Structure
 
 ```yaml
