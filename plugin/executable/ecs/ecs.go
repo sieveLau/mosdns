@@ -22,7 +22,6 @@ package ecs
 import (
 	"context"
 	"fmt"
-	"net"
 	"net/netip"
 
 	"github.com/miekg/dns"
@@ -36,47 +35,12 @@ import (
 const PluginType = "ecs"
 
 // TODO: dynamic smart blacklist, if refused, add to list: domain-subnet
-
-var privateIPBlocks []*net.IPNet
-
 func init() {
-	for _, cidr := range []string{
-		"127.0.0.0/8",    // IPv4 loopback
-		"10.0.0.0/8",     // RFC1918
-		"172.16.0.0/12",  // RFC1918
-		"192.168.0.0/16", // RFC1918
-		"169.254.0.0/16", // RFC3927 link-local
-		"::1/128",        // IPv6 loopback
-		"fe80::/10",      // IPv6 link-local
-		"fc00::/7",       // IPv6 unique local addr
-	} {
-		_, block, err := net.ParseCIDR(cidr)
-		if err != nil {
-			panic(fmt.Errorf("parse error on %q: %v", cidr, err))
-		}
-		privateIPBlocks = append(privateIPBlocks, block)
-	}
 	coremain.RegNewPluginFunc(PluginType, Init, func() interface{} { return new(Args) })
 
 	coremain.RegNewPersetPluginFunc("_no_ecs", func(bp *coremain.BP) (coremain.Plugin, error) {
 		return &noECS{BP: bp}, nil
 	})
-}
-
-func isPrivateIP(ip netip.Addr) bool {
-	if ip.Is4In6() {
-		ip = ip.Unmap()
-	}
-	if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
-		return true
-	}
-
-	for _, block := range privateIPBlocks {
-		if block.Contains(net.IP(ip.AsSlice())) {
-			return true
-		}
-	}
-	return false
 }
 
 var _ coremain.ExecutablePlugin = (*ecsPlugin)(nil)
@@ -157,7 +121,7 @@ func newPlugin(bp *coremain.BP, args *Args) (p *ecsPlugin, err error) {
 		if !addr.Is4() {
 			return nil, fmt.Errorf("%s is not a ipv4 address", args.IPv4)
 		}
-		if isPrivateIP(addr) {
+		if utils.IsPrivateIP(addr) {
 			bp.L().Warn(fmt.Sprintf("%s is a private address and should not be used as client subnet", addr.String()))
 			if noprivateMode == 0 {
 				ep.ipv4 = addr
@@ -175,7 +139,7 @@ func newPlugin(bp *coremain.BP, args *Args) (p *ecsPlugin, err error) {
 		if !addr.Is6() {
 			return nil, fmt.Errorf("%s is not a ipv6 address", args.IPv6)
 		}
-		if isPrivateIP(addr) {
+		if utils.IsPrivateIP(addr) {
 			bp.L().Warn(fmt.Sprintf("%s is a private address and should not be used as client subnet", addr.String()))
 			if noprivateMode == 0 {
 				ep.ipv6 = addr
@@ -251,7 +215,7 @@ func (e *ecsPlugin) addECS(qCtx *query_context.Context) (upgraded bool, overwrit
 			if !e.args.ForceOverwrite || oldECS.SourceNetmask == 0 {
 				return false, overwrited, oldECS
 			}
-		} else if isPrivateIP(addr) { // ecs address is valid
+		} else if utils.IsPrivateIP(addr) { // ecs address is valid
 			if noprivateMode == 2 {
 				e.L().Warn(fmt.Sprintf("private address %s in query ECS with strict no private mode, removing", addr.String()))
 				dnsutils.RemoveMsgECS(q)
@@ -274,7 +238,7 @@ func (e *ecsPlugin) addECS(qCtx *query_context.Context) (upgraded bool, overwrit
 	var ecs *dns.EDNS0_SUBNET
 	if e.args.Auto { // use client ip
 		clientAddr := qCtx.ReqMeta().ClientAddr
-		if !clientAddr.IsValid() || (isPrivateIP(clientAddr) && noprivateMode > 0) {
+		if !clientAddr.IsValid() || (utils.IsPrivateIP(clientAddr) && noprivateMode > 0) {
 			// Not replacing ECS, return nil
 			return false, overwrited, oldECS
 		}

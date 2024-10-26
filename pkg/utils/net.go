@@ -20,9 +20,32 @@
 package utils
 
 import (
+	"fmt"
 	"net"
 	"net/netip"
 )
+
+var privateIPBlocks []*net.IPNet
+
+func init() {
+	for _, cidr := range []string{
+		"127.0.0.0/8",    // IPv4 loopback
+		"10.0.0.0/8",     // RFC1918
+		"172.16.0.0/12",  // RFC1918
+		"192.168.0.0/16", // RFC1918
+		"169.254.0.0/16", // RFC3927 link-local
+		"::1/128",        // IPv6 loopback
+		"fe80::/10",      // IPv6 link-local
+		"fc00::/7",       // IPv6 unique local addr
+	} {
+		_, block, err := net.ParseCIDR(cidr)
+		if err != nil {
+			panic(fmt.Errorf("parse error on %q: %v", cidr, err))
+		}
+		privateIPBlocks = append(privateIPBlocks, block)
+	}
+}
+
 
 // GetIPFromAddr returns a net.IP from the given net.Addr.
 // addr can be *net.TCPAddr, *net.UDPAddr, *net.IPNet, *net.IPAddr
@@ -55,4 +78,28 @@ func SplitSchemeAndHost(addr string) (protocol, host string) {
 	} else {
 		return "", addr
 	}
+}
+
+func GetAddrFromIP(ip net.IP) netip.Addr {
+	addr, err := netip.ParseAddr(ip.String())
+    if err != nil {
+        return netip.Addr{}
+    }
+    return addr
+}
+
+func IsPrivateIP(ip netip.Addr) bool {
+	if ip.Is4In6() {
+		ip = ip.Unmap()
+	}
+	if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+		return true
+	}
+
+	for _, block := range privateIPBlocks {
+		if block.Contains(net.IP(ip.AsSlice())) {
+			return true
+		}
+	}
+	return false
 }

@@ -35,6 +35,7 @@ import (
 	"github.com/sieveLau/mosdns/v4-maintenance/coremain"
 	"github.com/sieveLau/mosdns/v4-maintenance/mlog"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/dnsutils"
+	"github.com/sieveLau/mosdns/v4-maintenance/pkg/utils"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/executable_seq"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/query_context"
 )
@@ -213,7 +214,17 @@ func (f *forwardPlugin) exec(ctx context.Context, qCtx *query_context.Context, s
 	go func() {
 		var r *dns.Msg
 		var err error
-		if f.fastest != nil && !qCtx.ReqMeta().ClientAddr.IsPrivate() {
+		fastest_ok := (f.fastest != nil)
+		// if ecs presents, check private based on it first.
+		// if no ecs, check client addr from query metadata
+		if fastest_ok {
+			ecs := dnsutils.GetMsgECS(q)
+			if (ecs != nil && !utils.IsPrivateIP(utils.GetAddrFromIP(ecs.Address))) || (ecs == nil && !utils.IsPrivateIP(qCtx.ReqMeta().ClientAddr)) {
+				fastest_ok = false
+			}
+		}
+
+		if fastest_ok {
 			r, _, err = f.fastest.ExchangeFastest(q, f.upstreams) 
 		} else {
 			r, _, err = upstream.ExchangeParallel(f.upstreams, q)
