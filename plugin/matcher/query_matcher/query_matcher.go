@@ -58,6 +58,13 @@ func init() {
 			return &queryIsEDNS0{BP: bp}, nil
 		},
 	)
+
+	coremain.RegNewPersetPluginFunc(
+		"_qtype_any",
+		func(bp *coremain.BP) (coremain.Plugin, error) {
+			return newQueryMatcher(bp, &Args{QType: []int{int(dns.TypeANY)}})
+		},
+	)
 }
 
 var _ coremain.MatcherPlugin = (*queryMatcher)(nil)

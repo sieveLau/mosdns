@@ -99,6 +99,7 @@ func newBlackHole(bp *coremain.BP, args *Args) (*blackHole, error) {
 // sets qCtx.R() with empty response with rcode = Args.RCode.
 // drops qCtx.R() if Args.RCode < 0
 // It never returns an error.
+// It will replace the existing response if placed after forwarding plugin. No need to drop response.
 func (b *blackHole) Exec(ctx context.Context, qCtx *query_context.Context, next executable_seq.ExecutableChainNode) error {
 	b.exec(qCtx)
 	return executable_seq.ExecChainNode(ctx, qCtx, next)

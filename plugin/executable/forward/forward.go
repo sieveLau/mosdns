@@ -29,6 +29,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/AdguardTeam/dnsproxy/fastip"
 	"github.com/AdguardTeam/dnsproxy/upstream"
 	"github.com/miekg/dns"
 	"github.com/sieveLau/mosdns/v4-maintenance/coremain"
@@ -51,6 +52,7 @@ type forwardPlugin struct {
 
 	upstreams []upstream.Upstream
 	autoRetry bool
+	fastest   *fastip.FastestAddr
 }
 
 type Args struct {
@@ -61,6 +63,8 @@ type Args struct {
 	Bootstrap          []string         `yaml:"bootstrap"`
 	TrustCA            string           `yaml:"trust_ca"`
 	AutoRetry	       bool             `yaml:"auto_retry"`
+	Fastest            bool             `yaml:"fastest"`
+	FastestTimetout	   int              `yaml:"fastest_timeout"`
 }
 
 type UpstreamConfig struct {
@@ -83,10 +87,20 @@ func newForwarder(bp *coremain.BP, args *Args) (*forwardPlugin, error) {
 
 	f := new(forwardPlugin)
 	f.BP = bp
-	if args.AutoRetry {
-		f.autoRetry = true
+	f.autoRetry = args.AutoRetry
+	
+	if args.Fastest {
+		var duration int
+		if args.FastestTimetout > 0 {
+			duration = args.FastestTimetout
+		} else {
+			duration = 0
+		}
+		fastConfig := new(fastip.Config)
+		fastConfig.PingWaitTimeout = time.Millisecond * time.Duration(duration)
+		f.fastest = fastip.New(fastConfig)
 	} else {
-		f.autoRetry = false
+		f.fastest = nil
 	}
 
 	for i, conf := range args.UpstreamConfig {
@@ -197,7 +211,13 @@ func (f *forwardPlugin) exec(ctx context.Context, qCtx *query_context.Context, s
 	}
 	c := make(chan res, 1)
 	go func() {
-		r, _, err := upstream.ExchangeParallel(f.upstreams, q)
+		var r *dns.Msg
+		var err error
+		if f.fastest != nil && !qCtx.ReqMeta().ClientAddr.IsPrivate() {
+			r, _, err = f.fastest.ExchangeFastest(q, f.upstreams) 
+		} else {
+			r, _, err = upstream.ExchangeParallel(f.upstreams, q)
+		}
 		c <- res{
 			r:   r,
 			err: err,
