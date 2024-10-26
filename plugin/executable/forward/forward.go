@@ -213,7 +213,7 @@ func (f *forwardPlugin) exec(ctx context.Context, qCtx *query_context.Context, s
 	go func() {
 		var r *dns.Msg
 		var err error
-		if f.fastest != nil {
+		if f.fastest != nil && !qCtx.ReqMeta().ClientAddr.IsPrivate() {
 			r, _, err = f.fastest.ExchangeFastest(q, f.upstreams) 
 		} else {
 			r, _, err = upstream.ExchangeParallel(f.upstreams, q)
