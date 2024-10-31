@@ -5,7 +5,7 @@ go 1.22.6
 require (
 	github.com/AdguardTeam/dnsproxy v0.73.2
 	github.com/Knetic/govaluate v3.0.0+incompatible
-	github.com/fsnotify/fsnotify v1.7.0
+	github.com/fsnotify/fsnotify v1.8.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang/snappy v0.0.4
 	github.com/google/nftables v0.2.0
@@ -15,7 +15,7 @@ require (
 	github.com/nadoo/ipset v0.5.0
 	github.com/pires/go-proxyproto v0.8.0
 	github.com/prometheus/client_golang v1.20.5
-	github.com/quic-go/quic-go v0.48.0
+	github.com/quic-go/quic-go v0.48.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
