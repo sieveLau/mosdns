@@ -1,6 +1,7 @@
 module github.com/sieveLau/mosdns/v4-maintenance
 
-go 1.22.6
+go 1.23.3
+
 require (
 	github.com/AdguardTeam/dnsproxy v0.73.3
 	github.com/Knetic/govaluate v3.0.0+incompatible
