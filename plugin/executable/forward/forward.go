@@ -54,6 +54,7 @@ type forwardPlugin struct {
 	upstreams []upstream.Upstream
 	autoRetry bool
 	fastest   *fastip.FastestAddr
+	exchangeAll bool
 }
 
 type Args struct {
@@ -66,6 +67,7 @@ type Args struct {
 	AutoRetry	       bool             `yaml:"auto_retry"`
 	Fastest            bool             `yaml:"fastest"`
 	FastestTimetout	   int              `yaml:"fastest_timeout"`
+	All            bool                 `yaml:"all"`
 }
 
 type UpstreamConfig struct {
@@ -89,6 +91,7 @@ func newForwarder(bp *coremain.BP, args *Args) (*forwardPlugin, error) {
 	f := new(forwardPlugin)
 	f.BP = bp
 	f.autoRetry = args.AutoRetry
+	f.exchangeAll = args.All
 	
 	if args.Fastest {
 		var duration int
@@ -194,6 +197,28 @@ func (f *forwardPlugin) Exec(ctx context.Context, qCtx *query_context.Context, n
 	return executable_seq.ExecChainNode(ctx, qCtx, next)
 }
 
+func mergeResponses(res []upstream.ExchangeAllResult) (*dns.Msg, error) {
+    // Create a new empty dns.Msg
+    var mergedMsg *dns.Msg = nil
+    
+    for _, result := range res {
+        // Ensure the response exists
+        if result.Resp == nil {
+            continue
+        } else if mergedMsg == nil {
+			// for the first valid response, we set our final result to its copy
+			// instead of creating a dns.Msg from sratch, this is more error-proofing
+			mergedMsg = result.Resp.Copy()
+			continue
+		}
+
+        // Merge the Answer section
+		// Ignore the NS and Extra parts which I think is more complicated
+        mergedMsg.Answer = append(mergedMsg.Answer, result.Resp.Answer...)
+    }
+
+    return mergedMsg, nil
+}
 
 // specialQ: if you want to use another dns.Msg instead of that in qCtx
 // for example, auto retry when refused due to invalid ecs
@@ -219,6 +244,7 @@ func (f *forwardPlugin) exec(ctx context.Context, qCtx *query_context.Context, s
 		// if no ecs, check client addr from query metadata
 		if fastest_ok {
 			ecs := dnsutils.GetMsgECS(q)
+			// if query from non-private address, we won't enable the fastest mode
 			if (ecs != nil && !utils.IsPrivateIP(utils.GetAddrFromIP(ecs.Address))) || (ecs == nil && !utils.IsPrivateIP(qCtx.ReqMeta().ClientAddr)) {
 				fastest_ok = false
 			}
@@ -226,6 +252,10 @@ func (f *forwardPlugin) exec(ctx context.Context, qCtx *query_context.Context, s
 
 		if fastest_ok {
 			r, _, err = f.fastest.ExchangeFastest(q, f.upstreams) 
+		} else if f.exchangeAll {
+			var res []upstream.ExchangeAllResult
+			res, err = upstream.ExchangeAll(f.upstreams, q)
+			r, _ = mergeResponses(res)
 		} else {
 			r, _, err = upstream.ExchangeParallel(f.upstreams, q)
 		}
