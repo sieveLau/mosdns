@@ -1,13 +1,12 @@
 module github.com/sieveLau/mosdns/v4-maintenance
 
 go 1.24.0
-
 require (
-	github.com/AdguardTeam/dnsproxy v0.75.0
+	github.com/AdguardTeam/dnsproxy v0.75.1
 	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/golang/snappy v0.0.4
+	github.com/golang/snappy v1.0.0
 	github.com/google/nftables v0.3.0
 	github.com/kardianos/service v1.2.2
 	github.com/miekg/dns v1.1.63
@@ -42,7 +41,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/pprof v0.0.0-20250208200701-d0013a598941 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -68,8 +67,8 @@ require (
 	go.uber.org/mock v0.5.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/mod v0.23.0 // indirect
+	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
-	golang.org/x/tools v0.30.0 // indirect
+	golang.org/x/tools v0.31.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
