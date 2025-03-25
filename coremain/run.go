@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"github.com/sieveLau/mosdns/v4-maintenance/mlog"
 	"github.com/kardianos/service"
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -137,14 +137,12 @@ func loadConfig(filePath string) (*Config, string, error) {
 		return nil, "", fmt.Errorf("failed to read config: %w", err)
 	}
 
-	decoderOpt := func(cfg *mapstructure.DecoderConfig) {
+	cfg := new(Config)
+	if err := v.Unmarshal(cfg, func(cfg *mapstructure.DecoderConfig) {
 		cfg.ErrorUnused = true
 		cfg.TagName = "yaml"
 		cfg.WeaklyTypedInput = true
-	}
-
-	cfg := new(Config)
-	if err := v.Unmarshal(cfg, decoderOpt); err != nil {
+	}); err != nil {
 		return nil, "", fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 	return cfg, v.ConfigFileUsed(), nil
