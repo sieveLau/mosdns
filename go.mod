@@ -1,6 +1,7 @@
 module github.com/sieveLau/mosdns/v4-maintenance
 
 go 1.24.2
+
 require (
 	github.com/AdguardTeam/dnsproxy v0.75.3
 	github.com/Knetic/govaluate v3.0.0+incompatible
@@ -15,7 +16,7 @@ require (
 	github.com/nadoo/ipset v0.5.0
 	github.com/pires/go-proxyproto v0.8.0
 	github.com/prometheus/client_golang v1.22.0
-	github.com/quic-go/quic-go v0.50.1
+	github.com/quic-go/quic-go v0.51.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
