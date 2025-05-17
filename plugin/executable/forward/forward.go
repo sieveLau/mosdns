@@ -35,9 +35,9 @@ import (
 	"github.com/sieveLau/mosdns/v4-maintenance/coremain"
 	"github.com/sieveLau/mosdns/v4-maintenance/mlog"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/dnsutils"
-	"github.com/sieveLau/mosdns/v4-maintenance/pkg/utils"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/executable_seq"
 	"github.com/sieveLau/mosdns/v4-maintenance/pkg/query_context"
+	"github.com/sieveLau/mosdns/v4-maintenance/pkg/utils"
 )
 
 const PluginType = "forward"
@@ -51,9 +51,9 @@ var _ coremain.ExecutablePlugin = (*forwardPlugin)(nil)
 type forwardPlugin struct {
 	*coremain.BP
 
-	upstreams []upstream.Upstream
-	autoRetry bool
-	fastest   *fastip.FastestAddr
+	upstreams   []upstream.Upstream
+	autoRetry   bool
+	fastest     *fastip.FastestAddr
 	exchangeAll bool
 }
 
@@ -64,10 +64,10 @@ type Args struct {
 	InsecureSkipVerify bool             `yaml:"insecure_skip_verify"`
 	Bootstrap          []string         `yaml:"bootstrap"`
 	TrustCA            string           `yaml:"trust_ca"`
-	AutoRetry	       bool             `yaml:"auto_retry"`
+	AutoRetry          bool             `yaml:"auto_retry"`
 	Fastest            bool             `yaml:"fastest"`
-	FastestTimetout	   int              `yaml:"fastest_timeout"`
-	All            bool                 `yaml:"all"`
+	FastestTimetout    int              `yaml:"fastest_timeout"`
+	All                bool             `yaml:"all"`
 }
 
 type UpstreamConfig struct {
@@ -92,7 +92,7 @@ func newForwarder(bp *coremain.BP, args *Args) (*forwardPlugin, error) {
 	f.BP = bp
 	f.autoRetry = args.AutoRetry
 	f.exchangeAll = args.All
-	
+
 	if args.Fastest {
 		var duration int
 		if args.FastestTimetout > 0 {
@@ -198,26 +198,36 @@ func (f *forwardPlugin) Exec(ctx context.Context, qCtx *query_context.Context, n
 }
 
 func mergeResponses(res []upstream.ExchangeAllResult) (*dns.Msg, error) {
-    // Create a new empty dns.Msg
-    var mergedMsg *dns.Msg = nil
-    
-    for _, result := range res {
-        // Ensure the response exists
-        if result.Resp == nil {
-            continue
-        } else if mergedMsg == nil {
-			// for the first valid response, we set our final result to its copy
-			// instead of creating a dns.Msg from sratch, this is more error-proofing
-			mergedMsg = result.Resp.Copy()
+	var mergedMsg *dns.Msg = nil
+	seen := make(map[string]struct{})
+
+	for _, result := range res {
+		if result.Resp == nil {
 			continue
 		}
 
-        // Merge the Answer section
-		// Ignore the NS and Extra parts which I think is more complicated
-        mergedMsg.Answer = append(mergedMsg.Answer, result.Resp.Answer...)
-    }
+		if mergedMsg == nil {
+			mergedMsg = result.Resp.Copy()
+			for _, rr := range mergedMsg.Answer {
+				rrCopy := dns.Copy(rr)
+				rrCopy.Header().Ttl = 0
+				seen[rrCopy.String()] = struct{}{}
+			}
+			continue
+		}
 
-    return mergedMsg, nil
+		for _, rr := range result.Resp.Answer {
+			rrCopy := dns.Copy(rr)
+			rrCopy.Header().Ttl = 0
+			key := rrCopy.String()
+			if _, ok := seen[key]; !ok {
+				seen[key] = struct{}{}
+				mergedMsg.Answer = append(mergedMsg.Answer, rr)
+			}
+		}
+	}
+
+	return mergedMsg, nil
 }
 
 // specialQ: if you want to use another dns.Msg instead of that in qCtx
@@ -251,7 +261,7 @@ func (f *forwardPlugin) exec(ctx context.Context, qCtx *query_context.Context, s
 		}
 
 		if fastest_ok {
-			r, _, err = f.fastest.ExchangeFastest(q, f.upstreams) 
+			r, _, err = f.fastest.ExchangeFastest(q, f.upstreams)
 		} else if f.exchangeAll {
 			var res []upstream.ExchangeAllResult
 			res, err = upstream.ExchangeAll(f.upstreams, q)
