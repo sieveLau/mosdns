@@ -23,15 +23,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/sieveLau/mosdns/v4-maintenance/pkg/dnsutils"
-	"github.com/sieveLau/mosdns/v4-maintenance/pkg/upstream/bootstrap"
-	"github.com/sieveLau/mosdns/v4-maintenance/pkg/upstream/doh"
-	"github.com/sieveLau/mosdns/v4-maintenance/pkg/upstream/h3roundtripper"
-	"github.com/sieveLau/mosdns/v4-maintenance/pkg/upstream/transport"
-	"github.com/quic-go/quic-go"
-	"github.com/miekg/dns"
-	"go.uber.org/zap"
-	"golang.org/x/net/http2"
 	"io"
 	"net"
 	"net/http"
@@ -39,6 +30,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/miekg/dns"
+	"github.com/quic-go/quic-go"
+	"github.com/quic-go/quic-go/http3"
+	"github.com/sieveLau/mosdns/v4-maintenance/pkg/dnsutils"
+	"github.com/sieveLau/mosdns/v4-maintenance/pkg/upstream/bootstrap"
+	"github.com/sieveLau/mosdns/v4-maintenance/pkg/upstream/doh"
+	"github.com/sieveLau/mosdns/v4-maintenance/pkg/upstream/transport"
+	"go.uber.org/zap"
+	"golang.org/x/net/http2"
 )
 
 const (
@@ -231,9 +232,8 @@ func NewUpstream(addr string, opt *Opt) (Upstream, error) {
 				return nil, fmt.Errorf("failed to init udp socket for quic")
 			}
 			addonCloser = conn
-			t = &h3roundtripper.H3RTHelper{
-				Logger:    opt.Logger,
-				TLSConfig: opt.TLSConfig,
+			t = &http3.Transport{
+				TLSClientConfig: opt.TLSConfig,
 				QUICConfig: &quic.Config{
 					TokenStore:                     quic.NewLRUTokenStore(4, 8),
 					InitialStreamReceiveWindow:     4 * 1024,
@@ -241,7 +241,7 @@ func NewUpstream(addr string, opt *Opt) (Upstream, error) {
 					InitialConnectionReceiveWindow: 8 * 1024,
 					MaxConnectionReceiveWindow:     64 * 1024,
 				},
-				DialFunc: func(ctx context.Context, _ string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlyConnection, error) {
+				Dial: func(ctx context.Context, _ string, tlsCfg *tls.Config, cfg *quic.Config) (*quic.Conn, error) {
 					ua, err := net.ResolveUDPAddr("udp", dialAddr) // TODO: Support bootstrap.
 					if err != nil {
 						return nil, err
