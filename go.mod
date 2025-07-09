@@ -11,7 +11,7 @@ require (
 	github.com/golang/snappy v1.0.0
 	github.com/google/nftables v0.3.0
 	github.com/kardianos/service v1.2.2
-	github.com/miekg/dns v1.1.66
+	github.com/miekg/dns v1.1.67
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/nadoo/ipset v0.5.0
 	github.com/pires/go-proxyproto v0.8.1
@@ -24,8 +24,8 @@ require (
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
 	golang.org/x/net v0.41.0
-	golang.org/x/sync v0.15.0
-	golang.org/x/sys v0.33.0
+	golang.org/x/sync v0.16.0
+	golang.org/x/sys v0.34.0
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v3 v3.0.1
 )
