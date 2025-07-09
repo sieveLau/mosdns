@@ -21,11 +21,12 @@ package dnsutils
 
 import (
 	"encoding/binary"
-	"github.com/sieveLau/mosdns/v4-maintenance/pkg/pool"
-	"github.com/sieveLau/mosdns/v4-maintenance/pkg/utils"
-	"github.com/miekg/dns"
 	"strconv"
 	"strings"
+
+	"github.com/miekg/dns"
+	"github.com/sieveLau/mosdns/v4-maintenance/pkg/pool"
+	"github.com/sieveLau/mosdns/v4-maintenance/pkg/utils"
 )
 
 // GetMinimalTTL returns the minimal ttl of this msg.
@@ -152,15 +153,15 @@ func FakeSOA(name string) *dns.SOA {
 			Name:   name,
 			Rrtype: dns.TypeSOA,
 			Class:  dns.ClassINET,
-			Ttl:    300,
+			Ttl:    10,
 		},
 		Ns:      "fake-ns.mosdns.fake.root.",
 		Mbox:    "fake-mbox.mosdns.fake.root.",
 		Serial:  2021110400,
-		Refresh: 1800,
-		Retry:   900,
-		Expire:  604800,
-		Minttl:  86400,
+		Refresh: 10,
+		Retry:   10,
+		Expire:  10,
+		Minttl:  10,
 	}
 }
 
