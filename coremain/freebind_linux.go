@@ -50,6 +50,12 @@ func ListenTCPWithFreebind(address string, freebind bool) (net.Listener, error) 
 		}
 	}
 
+	// Set SO_REUSEADDR to prevent bind failure in restarting mosdns
+	if err := syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1); err != nil {
+		syscall.Close(fd)
+		return nil, fmt.Errorf("failed to set SO_REUSEADDR: %v", err)
+	}
+
 	// Bind the socket
 	if err := syscall.Bind(fd, addr); err != nil {
 		syscall.Close(fd)
@@ -106,13 +112,18 @@ func ListenUDPWithFreebind(address string, freebind bool) (net.PacketConn, error
 		return nil, fmt.Errorf("failed to create socket: %v", err)
 	}
 
-
 	// Set the IP_FREEBIND option
 	if freebind {
 		if err := syscall.SetsockoptInt(fd, syscall.SOL_IP, syscall.IP_FREEBIND, 1); err != nil {
 			syscall.Close(fd)
 			return nil, fmt.Errorf("failed to set IP_FREEBIND: %v", err)
 		}
+	}
+
+	// Set SO_REUSEADDR to prevent bind failure in restarting mosdns
+	if err := syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1); err != nil {
+		syscall.Close(fd)
+		return nil, fmt.Errorf("failed to set SO_REUSEADDR: %v", err)
 	}
 
 	// Bind the socket
