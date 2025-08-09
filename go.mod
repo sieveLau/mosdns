@@ -1,9 +1,10 @@
 module github.com/sieveLau/mosdns/v4-maintenance
 
-go 1.24.4
+go 1.24.5
 
 require (
 	github.com/AdguardTeam/dnsproxy v0.76.1
+	github.com/AdguardTeam/golibs v0.33.1
 	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-redis/redis/v8 v8.11.5
@@ -11,7 +12,7 @@ require (
 	github.com/golang/snappy v1.0.0
 	github.com/google/nftables v0.3.0
 	github.com/kardianos/service v1.2.4
-	github.com/miekg/dns v1.1.67
+	github.com/miekg/dns v1.1.68
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/nadoo/ipset v0.5.0
 	github.com/pires/go-proxyproto v0.8.1
@@ -22,18 +23,17 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/zap v1.27.0
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba
-	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
-	golang.org/x/net v0.42.0
+	golang.org/x/exp v0.0.0-20250808145144-a408d31f581a
+	golang.org/x/net v0.43.0
 	golang.org/x/sync v0.16.0
-	golang.org/x/sys v0.34.0
-	google.golang.org/protobuf v1.36.6
+	golang.org/x/sys v0.35.0
+	google.golang.org/protobuf v1.36.7
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 replace github.com/nadoo/ipset v0.5.0 => github.com/IrineSistiana/ipset v0.5.1-0.20220703061533-6e0fc3b04c0a
 
 require (
-	github.com/AdguardTeam/golibs v0.32.15 // indirect
 	github.com/ameshkov/dnscrypt/v2 v2.4.0 // indirect
 	github.com/ameshkov/dnsstamps v1.0.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -52,16 +52,16 @@ require (
 	github.com/prometheus/common v0.65.0 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
-	github.com/sagikazarmark/locafero v0.9.0 // indirect
-	github.com/sourcegraph/conc v0.3.0 // indirect
+	github.com/sagikazarmark/locafero v0.10.0 // indirect
+	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
 	github.com/spf13/afero v1.14.0 // indirect
 	github.com/spf13/cast v1.9.2 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.uber.org/mock v0.5.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.40.0 // indirect
-	golang.org/x/mod v0.25.0 // indirect
-	golang.org/x/text v0.27.0 // indirect
-	golang.org/x/tools v0.34.0 // indirect
+	golang.org/x/crypto v0.41.0 // indirect
+	golang.org/x/mod v0.27.0 // indirect
+	golang.org/x/text v0.28.0 // indirect
+	golang.org/x/tools v0.36.0 // indirect
 )
