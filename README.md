@@ -10,6 +10,26 @@ docker 镜像: [dockerhub: sievelau/mosdns](https://hub.docker.com/r/sievelau/mo
 
 # 改动/Changes
 
+## rfc_hosts
+
+Since: 2025-08-09
+
+新插件：rfc_hosts, 支持读取 /etc/hosts 格式的 hosts 文件，支持加载多个 hosts 文件。 不支持热重载。
+
+New Plugin: rfc_hosts, supports reading hosts files in /etc/hosts format and loading multiple hosts files. Hot reloading is not supported.
+
+Example:
+
+```yaml
+plugins:
+  - tag: ""
+    type: "rfc_hosts"
+    args:
+      hosts_path:
+        - "/etc/hosts"
+        - "/etc/mosdns/hosts"
+```
+
 ## trust_ca
 
 现在对upstream新增了一个配置项`trust_ca`，可以指定一个CA文件的路径，该CA所颁发的证书在**该插件**的范围内会被信任；系统已经信任的证书也会被信任。例如：

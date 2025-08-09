@@ -1,0 +1,5 @@
+127.0.0.1 test.a.b.com
+::1 test6.a.b.com
+
+10.0.0.1 multi.a.b.com
+192.168.0.1 multi.a.b.com

@@ -41,6 +41,7 @@ import (
 	_ "github.com/sieveLau/mosdns/v4-maintenance/plugin/executable/query_summary"
 	_ "github.com/sieveLau/mosdns/v4-maintenance/plugin/executable/redirect"
 	_ "github.com/sieveLau/mosdns/v4-maintenance/plugin/executable/reverse_lookup"
+	_ "github.com/sieveLau/mosdns/v4-maintenance/plugin/executable/rfc_hosts"
 	_ "github.com/sieveLau/mosdns/v4-maintenance/plugin/executable/sequence"
 	_ "github.com/sieveLau/mosdns/v4-maintenance/plugin/executable/sleep"
 	_ "github.com/sieveLau/mosdns/v4-maintenance/plugin/executable/ttl"
