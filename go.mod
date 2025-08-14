@@ -1,10 +1,10 @@
 module github.com/sieveLau/mosdns/v4-maintenance
 
-go 1.24.5
+go 1.24.6
 
 require (
 	github.com/AdguardTeam/dnsproxy v0.76.1
-	github.com/AdguardTeam/golibs v0.33.1
+	github.com/AdguardTeam/golibs v0.34.0
 	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-redis/redis/v8 v8.11.5
@@ -23,7 +23,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/zap v1.27.0
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba
-	golang.org/x/exp v0.0.0-20250808145144-a408d31f581a
+	golang.org/x/exp v0.0.0-20250813145105-42675adae3e6
 	golang.org/x/net v0.43.0
 	golang.org/x/sync v0.16.0
 	golang.org/x/sys v0.35.0
