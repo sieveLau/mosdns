@@ -1,10 +1,10 @@
 module github.com/sieveLau/mosdns/v4-maintenance
 
-go 1.24.6
+go 1.25.2
 
 require (
-	github.com/AdguardTeam/dnsproxy v0.76.1
-	github.com/AdguardTeam/golibs v0.34.1
+	github.com/AdguardTeam/dnsproxy v0.77.0
+	github.com/AdguardTeam/golibs v0.35.0
 	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-redis/redis/v8 v8.11.5
@@ -17,17 +17,17 @@ require (
 	github.com/nadoo/ipset v0.5.0
 	github.com/pires/go-proxyproto v0.8.1
 	github.com/prometheus/client_golang v1.23.2
-	github.com/quic-go/quic-go v0.54.0
+	github.com/quic-go/quic-go v0.55.0
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.27.0
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba
-	golang.org/x/exp v0.0.0-20250813145105-42675adae3e6
-	golang.org/x/net v0.44.0
+	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b
+	golang.org/x/net v0.45.0
 	golang.org/x/sync v0.17.0
-	golang.org/x/sys v0.36.0
-	google.golang.org/protobuf v1.36.9
+	golang.org/x/sys v0.37.0
+	google.golang.org/protobuf v1.36.10
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -58,12 +58,11 @@ require (
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	go.uber.org/mock v0.5.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.42.0 // indirect
-	golang.org/x/mod v0.27.0 // indirect
+	golang.org/x/mod v0.28.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
-	golang.org/x/tools v0.36.0 // indirect
+	golang.org/x/tools v0.37.0 // indirect
 )
