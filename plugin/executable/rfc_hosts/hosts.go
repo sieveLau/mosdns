@@ -57,7 +57,10 @@ func Init(bp *coremain.BP, args interface{}) (p coremain.Plugin, err error) {
 }
 
 func newHostsContainer(bp *coremain.BP, args *Args) (*hostsPlugin, error) {
-	storage, err := hostsfile.NewDefaultStorage()
+	storage, err := hostsfile.NewDefaultStorage(
+		context.TODO(),
+		&hostsfile.DefaultStorageConfig{},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +75,7 @@ func newHostsContainer(bp *coremain.BP, args *Args) (*hostsPlugin, error) {
 		// f implements io.Reader
 		var r io.Reader = f
 
-		err = hostsfile.Parse(storage, r, nil)
+		err = hostsfile.Parse(context.TODO(), storage, r, nil)
 		if err != nil {
 			return nil, err
 		}
