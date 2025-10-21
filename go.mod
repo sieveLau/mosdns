@@ -4,7 +4,7 @@ go 1.25.3
 
 require (
 	github.com/AdguardTeam/dnsproxy v0.77.0
-	github.com/AdguardTeam/golibs v0.35.1
+	github.com/AdguardTeam/golibs v0.35.2
 	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-redis/redis/v8 v8.11.5

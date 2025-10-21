@@ -1,7 +1,7 @@
 github.com/AdguardTeam/dnsproxy v0.77.0 h1:hQUqNeSDx4hK9bx90lJ4nTE1gRbhjoYYCApm6drlgPU=
 github.com/AdguardTeam/dnsproxy v0.77.0/go.mod h1:tWS7JZj0uOGXaiK4NvOANc1hAL8VVPYGrNe2FuuZOHY=
-github.com/AdguardTeam/golibs v0.35.1 h1:X8aAIr+5hPCwtsBcsh3BYyPP37HUf/BfOT5YTKMgfuA=
-github.com/AdguardTeam/golibs v0.35.1/go.mod h1:p/l6tG7QCv+Hi5yVpv1oZInoatRGOWoyD1m+Ume+ZNY=
+github.com/AdguardTeam/golibs v0.35.2 h1:GVlx/CiCz5ZXQmyvFrE3JyeGsgubE8f4rJvRshYJVVs=
+github.com/AdguardTeam/golibs v0.35.2/go.mod h1:p/l6tG7QCv+Hi5yVpv1oZInoatRGOWoyD1m+Ume+ZNY=
 github.com/IrineSistiana/ipset v0.5.1-0.20220703061533-6e0fc3b04c0a h1:GQdh/h0q0ni3L//CXusyk+7QdhBL289vdNaes1WKkHI=
 github.com/IrineSistiana/ipset v0.5.1-0.20220703061533-6e0fc3b04c0a/go.mod h1:rYF5DQLRGGoQ8ZSWeK+6eX5amAuPqwFkWjhQlEITGJQ=
 github.com/Knetic/govaluate v3.0.0+incompatible h1:7o6+MAPhYTCF0+fdvoz1xDedhRb4f6s9Tn1Tt7/WTEg=
