@@ -1,7 +1,7 @@
-github.com/AdguardTeam/dnsproxy v0.78.0 h1:HkshrCPbnciJzl8LLkOmaO6J+aWNSbatggCx2xBf4B8=
-github.com/AdguardTeam/dnsproxy v0.78.0/go.mod h1:uoOWRv2/FkZGlstG0r/+zwc1C3ypMgzeaeOCv7MTWWI=
-github.com/AdguardTeam/golibs v0.35.2 h1:GVlx/CiCz5ZXQmyvFrE3JyeGsgubE8f4rJvRshYJVVs=
-github.com/AdguardTeam/golibs v0.35.2/go.mod h1:p/l6tG7QCv+Hi5yVpv1oZInoatRGOWoyD1m+Ume+ZNY=
+github.com/AdguardTeam/dnsproxy v0.78.1 h1:+/EZJI5X5qeks+s/Y4kQIMq5mBKaSW/jcYIsi5guqj8=
+github.com/AdguardTeam/dnsproxy v0.78.1/go.mod h1:uoOWRv2/FkZGlstG0r/+zwc1C3ypMgzeaeOCv7MTWWI=
+github.com/AdguardTeam/golibs v0.35.3 h1:DI0ffHyL3tFZ2UBEji3Aah7IvFwM5nY5yZoGvs1bnPY=
+github.com/AdguardTeam/golibs v0.35.3/go.mod h1:9Y0yqUpwDNyHxCv4AaI42x5+qxYc7k5DWAfxtFOTn8o=
 github.com/IrineSistiana/ipset v0.5.1-0.20220703061533-6e0fc3b04c0a h1:GQdh/h0q0ni3L//CXusyk+7QdhBL289vdNaes1WKkHI=
 github.com/IrineSistiana/ipset v0.5.1-0.20220703061533-6e0fc3b04c0a/go.mod h1:rYF5DQLRGGoQ8ZSWeK+6eX5amAuPqwFkWjhQlEITGJQ=
 github.com/Knetic/govaluate v3.0.0+incompatible h1:7o6+MAPhYTCF0+fdvoz1xDedhRb4f6s9Tn1Tt7/WTEg=
@@ -75,10 +75,10 @@ github.com/prometheus/common v0.66.1 h1:h5E0h5/Y8niHc5DlaLlWLArTQI7tMrsfQjHV+d9Z
 github.com/prometheus/common v0.66.1/go.mod h1:gcaUsgf3KfRSwHY4dIMXLPV0K/Wg1oZ8+SbZk/HH/dA=
 github.com/prometheus/procfs v0.17.0 h1:FuLQ+05u4ZI+SS/w9+BWEM2TXiHKsUQ9TADiRH7DuK0=
 github.com/prometheus/procfs v0.17.0/go.mod h1:oPQLaDAMRbA+u8H5Pbfq+dl3VDAvHxMUOVhe0wYB2zw=
-github.com/quic-go/qpack v0.5.1 h1:giqksBPnT/HDtZ6VhtFKgoLOWmlyo9Ei6u9PqzIMbhI=
-github.com/quic-go/qpack v0.5.1/go.mod h1:+PC4XFrEskIVkcLzpEkbLqq1uCoxPhQuvK5rH1ZgaEg=
-github.com/quic-go/quic-go v0.56.0 h1:q/TW+OLismmXAehgFLczhCDTYB3bFmua4D9lsNBWxvY=
-github.com/quic-go/quic-go v0.56.0/go.mod h1:9gx5KsFQtw2oZ6GZTyh+7YEvOxWCL9WZAepnHxgAo6c=
+github.com/quic-go/qpack v0.6.0 h1:g7W+BMYynC1LbYLSqRt8PBg5Tgwxn214ZZR34VIOjz8=
+github.com/quic-go/qpack v0.6.0/go.mod h1:lUpLKChi8njB4ty2bFLX2x4gzDqXwUpaO1DP9qMDZII=
+github.com/quic-go/quic-go v0.57.1 h1:25KAAR9QR8KZrCZRThWMKVAwGoiHIrNbT72ULHTuI10=
+github.com/quic-go/quic-go v0.57.1/go.mod h1:ly4QBAjHA2VhdnxhojRsCUOeJwKYg+taDlos92xb1+s=
 github.com/rogpeppe/go-internal v1.14.1 h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0tI/otEQ=
 github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7so1lCWt35ZSgc=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
