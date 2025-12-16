@@ -4,7 +4,7 @@ go 1.25.5
 
 require (
 	github.com/AdguardTeam/dnsproxy v0.78.2
-	github.com/AdguardTeam/golibs v0.35.4
+	github.com/AdguardTeam/golibs v0.35.5
 	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-redis/redis/v8 v8.11.5
@@ -12,7 +12,7 @@ require (
 	github.com/golang/snappy v1.0.0
 	github.com/google/nftables v0.3.0
 	github.com/kardianos/service v1.2.4
-	github.com/miekg/dns v1.1.68
+	github.com/miekg/dns v1.1.69
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/nadoo/ipset v0.5.0
 	github.com/pires/go-proxyproto v0.8.1
@@ -27,7 +27,7 @@ require (
 	golang.org/x/net v0.48.0
 	golang.org/x/sync v0.19.0
 	golang.org/x/sys v0.39.0
-	google.golang.org/protobuf v1.36.10
+	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
 )
 
